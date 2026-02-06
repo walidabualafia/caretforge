@@ -1,0 +1,37 @@
+import { z } from 'zod';
+
+// ── Model entry ───────────────────────────────────────────────
+export const modelSchema = z.object({
+  id: z.string().min(1),
+  description: z.string().optional(),
+});
+
+// ── Azure AI Foundry provider config ──────────────────────────
+export const azureFoundryConfigSchema = z.object({
+  endpoint: z.string().url('Must be a valid URL, e.g. https://my-endpoint.openai.azure.com'),
+  apiKey: z.string().optional(),
+  authMode: z.enum(['apiKey', 'azureCli', 'managedIdentity']).default('apiKey'),
+  models: z.array(modelSchema).default([]),
+  /** Path appended to the endpoint for chat completions. */
+  chatCompletionPath: z.string().default('/chat/completions'),
+  /** Azure API version query parameter. */
+  apiVersion: z.string().default('2024-08-01-preview'),
+});
+
+// ── Top-level providers map ───────────────────────────────────
+export const providersSchema = z.object({
+  azureFoundry: azureFoundryConfigSchema.optional(),
+});
+
+// ── Root config ───────────────────────────────────────────────
+export const configSchema = z.object({
+  defaultProvider: z.string().default('azure-foundry'),
+  providers: providersSchema.default({}),
+  telemetry: z.boolean().default(false),
+});
+
+// ── Exported types ────────────────────────────────────────────
+export type CaretForgeConfig = z.infer<typeof configSchema>;
+export type AzureFoundryConfig = z.infer<typeof azureFoundryConfigSchema>;
+export type ModelConfig = z.infer<typeof modelSchema>;
+export type ProvidersConfig = z.infer<typeof providersSchema>;
