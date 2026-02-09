@@ -20,7 +20,7 @@ CaretForge is a production-grade, extensible CLI that lets you plug in your own 
 ### Install & Build
 
 ```bash
-git clone https://github.com/YOUR_USER/caretforge.git
+git clone https://github.com/walidabualafia/caretforge.git
 cd caretforge
 pnpm install
 pnpm build
