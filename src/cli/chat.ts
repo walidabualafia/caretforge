@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { createInterface } from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
+import chalk from 'chalk';
 import type { ChatMessage } from '../providers/provider.js';
 import { userMessage } from '../core/messages.js';
 import { runAgent, type AgentOptions } from '../core/agent.js';
@@ -8,6 +9,8 @@ import { resolveProvider } from './shared.js';
 import { getLogger } from '../util/logger.js';
 import { formatError } from '../util/errors.js';
 import { PermissionManager } from '../ui/permissions.js';
+import { ensureDisclaimer } from '../ui/disclaimer.js';
+import { indexFiles, createFileCompleter, expandFileReferences } from '../ui/fileContext.js';
 import {
   printBanner,
   USER_PROMPT,
@@ -24,12 +27,26 @@ export const chatCommand = new Command('chat')
     const globals = cmd.optsWithGlobals();
     const log = getLogger();
 
+    // ── Disclaimer ──────────────────────────────────────────
+    const accepted = await ensureDisclaimer();
+    if (!accepted) process.exit(0);
+
     const provider = await resolveProvider(globals);
     const defaultModel = await getDefaultModel(globals, provider.name);
     let model = defaultModel;
     const stream: boolean = globals['stream'] ?? true;
 
-    const rl = createInterface({ input: stdin, output: stdout });
+    // ── Index files for @-completion ────────────────────────
+    const cwd = process.cwd();
+    printDim('Indexing files...');
+    const fileIndex = await indexFiles(cwd);
+    const completer = createFileCompleter(fileIndex);
+
+    const rl = createInterface({
+      input: stdin,
+      output: stdout,
+      completer,
+    });
 
     const permissions = new PermissionManager({
       allowWrite: globals['allowWrite'] ?? false,
@@ -39,6 +56,16 @@ export const chatCommand = new Command('chat')
 
     log.info({ provider: provider.name, model, stream }, 'Starting chat session');
     printBanner(provider.name, model);
+    printDim(`${fileIndex.length} files indexed · use @filename to add context`);
+    console.log('');
+
+    // Fetch available models for /model listing
+    let availableModels: Array<{ id: string; description?: string }> = [];
+    try {
+      availableModels = await provider.listModels();
+    } catch {
+      /* non-critical */
+    }
 
     const history: ChatMessage[] = [];
 
@@ -48,6 +75,9 @@ export const chatCommand = new Command('chat')
       printDim('Goodbye!');
       process.exit(0);
     });
+
+    // Ensure stdin is flowing before readline takes over
+    if (stdin.isPaused()) stdin.resume();
 
     try {
       while (true) {
@@ -83,6 +113,15 @@ export const chatCommand = new Command('chat')
                 printDim(`Model switched to ${model}`);
               } else {
                 printDim(`Current model: ${model}`);
+                if (availableModels.length > 0) {
+                  printDim('Available models:');
+                  for (const m of availableModels) {
+                    const active = m.id === model ? ' (active)' : '';
+                    const desc = m.description ? ` — ${m.description}` : '';
+                    printDim(`  • ${m.id}${desc}${active}`);
+                  }
+                  printDim('Switch with: /model <id>');
+                }
               }
               continue;
 
@@ -101,8 +140,18 @@ export const chatCommand = new Command('chat')
           }
         }
 
-        // ── Normal message ─────────────────────────────────
-        history.push(userMessage(trimmed));
+        // ── Expand @file references ────────────────────────
+        const { expandedMessage, refs } = await expandFileReferences(trimmed, fileIndex);
+        if (refs.length > 0) {
+          for (const ref of refs) {
+            const lines = ref.content.split('\n').length;
+            console.log(
+              `  ${chalk.cyan('+')} ${chalk.dim(`${ref.path}`)} ${chalk.dim(`(${lines} lines)`)}`,
+            );
+          }
+        }
+
+        history.push(userMessage(expandedMessage));
 
         const agentOptions: AgentOptions = {
           provider,
@@ -110,7 +159,6 @@ export const chatCommand = new Command('chat')
           stream,
           onToken: (token) => process.stdout.write(token),
           onToolCall: (name, args) => {
-            // End any streaming line before showing tool info
             console.log('');
             console.log(formatToolCallStart(name, args));
           },
@@ -120,7 +168,6 @@ export const chatCommand = new Command('chat')
           onPermissionRequest: (name, args) => permissions.check(name, args),
         };
 
-        // Start streaming output on a new line
         if (stream) {
           console.log('');
         }
@@ -132,7 +179,6 @@ export const chatCommand = new Command('chat')
             console.log(`\n${result.finalContent}`);
           }
 
-          // Ensure clean newline after response
           console.log('');
 
           // Sync conversation history (skip the system message at index 0)
@@ -156,7 +202,6 @@ async function getDefaultModel(
 ): Promise<string> {
   if (globals['model']) return globals['model'] as string;
 
-  // Pick a reasonable default per provider
   switch (providerName) {
     case 'azure-anthropic':
       return 'claude-opus-4-6';

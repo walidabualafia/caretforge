@@ -101,6 +101,7 @@ export function printHelp(): void {
   console.log(chalk.bold('  Commands'));
   console.log(`    ${chalk.cyan('/help')}              Show this help`);
   console.log(`    ${chalk.cyan('/clear')}             Clear conversation history`);
+  console.log(`    ${chalk.cyan('/model')}             List available models`);
   console.log(`    ${chalk.cyan('/model <id>')}        Switch model`);
   console.log(`    ${chalk.cyan('/compact')}           Summarise and compact history`);
   console.log(`    ${chalk.cyan('/exit')}              Exit CaretForge`);

@@ -109,10 +109,22 @@ Inside the REPL, you have slash commands:
 | Command       | Description                      |
 | ------------- | -------------------------------- |
 | `/help`       | Show available commands          |
+| `/model`      | List available models            |
 | `/model <id>` | Switch model mid-conversation    |
 | `/clear`      | Clear conversation history       |
 | `/compact`    | Trim older messages from history |
 | `/exit`       | Exit CaretForge                  |
+
+### File Context with @
+
+Reference files directly in your prompts using the `@` prefix:
+
+```
+> Explain @src/core/agent.ts
+> Compare @package.json and @tsconfig.json
+```
+
+Tab-completion is supported — press Tab after `@` to see available files. Files in your working directory are indexed on startup (respecting common ignore patterns like `node_modules`, `.git`, etc.).
 
 ### One-Shot Tasks
 
@@ -228,6 +240,7 @@ CLI flags  >  Environment variables  >  Config file  >  Defaults
 
 ## Security
 
+- **First-launch disclaimer.** On first run, CaretForge displays a disclaimer explaining what it can do and asks for explicit acceptance. This is persisted so you only see it once.
 - **Permission prompts by default.** Write and shell tools require explicit user approval per action (or `--allow-write` / `--allow-shell` to auto-approve).
 - **Secrets are never printed in full.** The `config show` command and logs use redaction (first 4, last 2 characters).
 - **`config init` does not write API keys** unless you pass `--with-secrets`.
@@ -268,7 +281,9 @@ src/
 │   └── index.ts    # Tool dispatcher
 ├── ui/             # Terminal UI
 │   ├── format.ts   # Colors, tool display, banners
-│   └── permissions.ts # Interactive permission prompts
+│   ├── permissions.ts # Interactive permission prompts
+│   ├── disclaimer.ts  # First-launch acceptance prompt
+│   └── fileContext.ts # @file indexing, completion, expansion
 └── util/           # Shared utilities
     ├── logger.ts   # Pino logger
     ├── errors.ts   # Error classes
@@ -277,7 +292,7 @@ src/
 
 ### Key Design Decisions
 
-- **Claude Code-style UX:** `caretforge` alone starts interactive mode; `caretforge "task"` runs a one-shot task. Permission prompts appear inline.
+- **Claude Code-style UX:** `caretforge` alone starts interactive mode; `caretforge "task"` runs a one-shot task. Permission prompts appear inline. `@file` references expand into file content context.
 - **Provider interface:** All providers implement `listModels()`, `createChatCompletion()`, and `createStreamingChatCompletion()`.
 - **Permission model:** The model always knows about all tools. Permission is checked at execution time, not tool selection time. Users approve per-action or use flags to auto-approve.
 - **Agent loop:** Messages go to the model → tool calls are executed → results are fed back → loop until text response (max 20 iterations).

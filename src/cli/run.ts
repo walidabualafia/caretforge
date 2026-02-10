@@ -8,6 +8,8 @@ import { resolveProvider } from './shared.js';
 import { getLogger } from '../util/logger.js';
 import { formatError } from '../util/errors.js';
 import { PermissionManager } from '../ui/permissions.js';
+import { ensureDisclaimer } from '../ui/disclaimer.js';
+import { indexFiles, expandFileReferences } from '../ui/fileContext.js';
 import { formatToolCallStart, formatToolResult, printError } from '../ui/format.js';
 
 export const runCommand = new Command('run')
@@ -16,6 +18,10 @@ export const runCommand = new Command('run')
   .action(async (taskParts: string[], _opts, cmd) => {
     const globals = cmd.optsWithGlobals();
     const log = getLogger();
+
+    // ── Disclaimer ──────────────────────────────────────────
+    const accepted = await ensureDisclaimer();
+    if (!accepted) process.exit(0);
 
     let task = taskParts.join(' ').trim();
 
@@ -41,6 +47,10 @@ export const runCommand = new Command('run')
     const jsonOutput: boolean = globals['json'] ?? false;
 
     log.debug({ task: task.slice(0, 100), model }, 'Running task');
+
+    // ── Expand @file references ─────────────────────────────
+    const fileIndex = await indexFiles(process.cwd());
+    const { expandedMessage } = await expandFileReferences(task, fileIndex);
 
     // Set up permission manager
     let rl: ReturnType<typeof createInterface> | undefined;
@@ -74,7 +84,7 @@ export const runCommand = new Command('run')
     };
 
     try {
-      const history = [userMessage(buildRunPrompt(task))];
+      const history = [userMessage(buildRunPrompt(expandedMessage))];
       const result = await runAgent(history, agentOptions);
 
       if (jsonOutput) {
@@ -85,13 +95,12 @@ export const runCommand = new Command('run')
           finalContent: result.finalContent,
           toolCallCount: result.toolCallCount,
           durationMs: result.durationMs,
-          messages: result.messages.slice(1), // skip system
+          messages: result.messages.slice(1),
         };
         console.log(JSON.stringify(output, null, 2));
       } else if (!stream && result.finalContent) {
         console.log(result.finalContent);
       } else {
-        // Streaming already printed; ensure clean newline
         console.log('');
       }
     } catch (err) {

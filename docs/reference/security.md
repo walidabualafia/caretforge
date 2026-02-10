@@ -2,6 +2,29 @@
 
 CaretForge is designed with security-conscious defaults.
 
+## First-Launch Disclaimer
+
+On first run, CaretForge displays a disclaimer explaining what it can do:
+
+```
+  ⚠  Disclaimer
+
+  CaretForge is an AI-powered coding agent that operates in your current directory.
+  It can:
+    • Read any file in your working directory
+    • Write files (with your permission per action)
+    • Execute shell commands (with your permission per action)
+
+  By continuing, you accept that you use this tool at your own risk.
+
+  Accept? [y]es / [n]o
+```
+
+- You must explicitly accept to continue
+- Acceptance is saved to `~/.config/caretforge/.accepted-terms`
+- The prompt only appears once per machine
+- Non-TTY environments (piped input) cannot accept and will exit
+
 ## Secret Handling
 
 ### Redaction

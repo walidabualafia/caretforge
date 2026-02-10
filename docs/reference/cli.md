@@ -63,10 +63,22 @@ caretforge --provider azure-foundry --allow-write
 | Command       | Description                      |
 | ------------- | -------------------------------- |
 | `/help`       | Show available commands          |
+| `/model`      | List available models            |
 | `/model <id>` | Switch model mid-conversation    |
 | `/clear`      | Clear conversation history       |
 | `/compact`    | Trim older messages from history |
 | `/exit`       | Exit CaretForge                  |
+
+**File context with `@`:**
+
+Reference files directly in your prompts using the `@` prefix. Press Tab after `@` to autocomplete file paths from your working directory.
+
+```bash
+> Explain @src/core/agent.ts
+> Compare @package.json with @tsconfig.json
+```
+
+Files are indexed on startup (up to 5000 files, depth 4), skipping common directories like `node_modules` and `.git`.
 
 ### `caretforge "task"` / `caretforge run [task...]`
 

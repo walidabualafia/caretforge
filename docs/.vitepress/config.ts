@@ -42,6 +42,10 @@ export default defineConfig({
           { text: 'Security', link: '/reference/security' },
         ],
       },
+      {
+        text: 'Community',
+        items: [{ text: 'Contributing', link: '/contributing' }],
+      },
     ],
 
     socialLinks: [{ icon: 'github', link: 'https://github.com/walidabualafia/caretforge' }],
