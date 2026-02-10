@@ -9,8 +9,8 @@ CaretForge is designed with security-conscious defaults.
 API keys and other secrets are **never printed in full**. The `config show` command and all log output use a redaction helper:
 
 ```
-Full key:    EXAMPLE_KEY_PLACEHOLDER...
-Redacted:    EUSF****2I
+Full key:    AbCdEfGhIjKlMnOpQrStUvWx...
+Redacted:    AbCd****Wx
 ```
 
 The redactor shows the first 4 and last 2 characters. Keys shorter than 8 characters are fully masked as `******`.
