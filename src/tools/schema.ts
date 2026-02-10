@@ -29,7 +29,7 @@ export const WRITE_FILE_TOOL: ToolDefinition = {
   function: {
     name: 'write_file',
     description:
-      'Write content to a file at the given path. Creates the file if it does not exist, overwrites if it does.',
+      'Write content to a file at the given path. Creates the file if it does not exist, overwrites if it does. Creates parent directories as needed.',
     parameters: {
       type: 'object',
       properties: {
@@ -52,7 +52,8 @@ export const EXEC_SHELL_TOOL: ToolDefinition = {
   type: 'function',
   function: {
     name: 'exec_shell',
-    description: 'Execute a shell command and return its stdout and stderr. Use with caution.',
+    description:
+      'Execute a shell command and return its stdout, stderr, and exit code. Runs in the current working directory by default.',
     parameters: {
       type: 'object',
       properties: {
@@ -76,20 +77,19 @@ export const EXEC_SHELL_TOOL: ToolDefinition = {
 };
 
 /**
- * Build the list of enabled tool definitions based on flags.
+ * All available tools. The model always knows about every tool;
+ * permission checking happens at execution time, not at selection time.
  */
-export function getEnabledTools(options: {
+export function getAllTools(): ToolDefinition[] {
+  return [READ_FILE_TOOL, WRITE_FILE_TOOL, EXEC_SHELL_TOOL];
+}
+
+/**
+ * @deprecated Use getAllTools() — tools are always available; permission is checked at runtime.
+ */
+export function getEnabledTools(_options?: {
   allowWrite: boolean;
   allowShell: boolean;
 }): ToolDefinition[] {
-  const tools: ToolDefinition[] = [READ_FILE_TOOL];
-
-  if (options.allowWrite) {
-    tools.push(WRITE_FILE_TOOL);
-  }
-  if (options.allowShell) {
-    tools.push(EXEC_SHELL_TOOL);
-  }
-
-  return tools;
+  return getAllTools();
 }

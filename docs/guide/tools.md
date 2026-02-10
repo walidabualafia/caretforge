@@ -1,44 +1,45 @@
 # Tools & Permissions
 
-CaretForge gives the AI agent access to tools that interact with your local filesystem and shell. All potentially destructive tools are **disabled by default**.
+CaretForge gives the AI agent access to tools that interact with your local filesystem and shell. The model always knows about all tools, but **destructive tools require your permission** before executing.
 
 ## Available Tools
 
-### `read_file` — Always Enabled
+### `read_file` — Always Allowed
 
 Reads the contents of a file and returns it to the model.
 
 ```bash
-# The agent can read files without any special flags
-caretforge run "What's in package.json?"
+caretforge "What's in package.json?"
 ```
 
-The model sends a tool call like:
+### `write_file` — Requires Permission
 
-```json
-{ "name": "read_file", "arguments": { "path": "package.json" } }
-```
-
-### `write_file` — Requires `--allow-write`
-
-Creates or overwrites a file with the given content.
+Creates or overwrites a file with the given content. Creates parent directories as needed.
 
 ```bash
-caretforge run "Create a hello.py file" --allow-write
+caretforge "Create a hello.py file"
 ```
 
-Without the flag, the agent gets an error message:
+When the model wants to write a file, you'll see:
 
 ```
-Error: File writing is disabled. Pass --allow-write to enable this tool.
+  ⚡ Write to hello.py
+  Allow? [y]es / [n]o / [a]lways
 ```
 
-### `exec_shell` — Requires `--allow-shell`
+### `exec_shell` — Requires Permission
 
-Executes a shell command and returns stdout/stderr.
+Executes a shell command and returns stdout, stderr, and exit code.
 
 ```bash
-caretforge run "List all running processes" --allow-shell
+caretforge "List all running processes"
+```
+
+When the model wants to run a command:
+
+```
+  ⚡ Run ls -la
+  Allow? [y]es / [n]o / [a]lways
 ```
 
 Features:
@@ -48,18 +49,52 @@ Features:
 - **Returns exit code** for the model to interpret
 
 ::: danger
-`--allow-shell` lets the agent run arbitrary commands on your machine. Only use this in trusted environments or sandboxed containers.
+Shell execution lets the agent run arbitrary commands on your machine. Review each command before approving, or only use `--allow-shell` in trusted environments.
 :::
 
+## Permission Model
+
+CaretForge uses an interactive permission model inspired by [Claude Code](https://github.com/anthropics/claude-code):
+
+1. The model **always knows about all tools** (read, write, shell)
+2. Safe tools (`read_file`) execute automatically
+3. Dangerous tools (`write_file`, `exec_shell`) prompt you first
+4. You choose: **allow once**, **deny**, or **always allow** for the session
+
+### Permission Responses
+
+| Response | Effect                                                         |
+| -------- | -------------------------------------------------------------- |
+| `y`      | Allow this one time                                            |
+| `n`      | Deny — the model gets a "permission denied" message and adapts |
+| `a`      | Allow all future calls of this type for the session            |
+
+### Auto-Approve Flags
+
+To skip prompts entirely:
+
+```bash
+caretforge --allow-write                # auto-approve all file writes
+caretforge --allow-shell                # auto-approve all shell commands
+caretforge --allow-write --allow-shell  # full autonomy
+```
+
+### Non-Interactive Mode
+
+When stdin is not a TTY (piped input, CI/CD), permission prompts are not possible. In this case:
+
+- Tools without `--allow-write` / `--allow-shell` flags are **denied**
+- The model receives a "permission denied" message and adapts
+
+```bash
+# This works — flag auto-approves writes
+echo "Create hello.py" | caretforge run --allow-write
+
+# This denies the write — can't prompt in non-TTY
+echo "Create hello.py" | caretforge run
+```
+
 ## How Tool Calling Works
-
-1. You send a message to the agent
-2. The model decides it needs to use a tool and returns a `tool_calls` response
-3. CaretForge executes the tool locally
-4. The result is sent back to the model
-5. The model processes the result and may call more tools or return a final answer
-
-This loop continues until the model produces a text-only response (or hits the iteration limit of 20).
 
 ```
 You: "What version of Node is in the Dockerfile?"
@@ -71,21 +106,28 @@ CaretForge: executes read_file, returns file contents
 Model: "The Dockerfile uses Node 20-alpine."
 ```
 
-## Combining Flags
+The agent loop continues until the model produces a text-only response (or hits the iteration limit of 20).
 
-You can enable multiple tools at once:
+## Tool Output Display
 
-```bash
-# Full access
-caretforge chat --allow-write --allow-shell
+Tool calls are displayed inline during execution:
 
-# Read-only (default) — no flags needed
-caretforge chat
+```
+  ▶ Read package.json
+    42 lines
+
+  ▶ Write src/hello.ts
+    ✓ Wrote 15 lines to /Users/you/project/src/hello.ts
+
+  ▶ $ npm test
+    ✓ exit 0
+    All 28 tests passed
 ```
 
 ## Safety Design
 
-- **Opt-in only:** Destructive tools require explicit flags
-- **No implicit escalation:** The model cannot enable tools on its own
-- **Iteration limit:** The agent loop stops after 20 iterations to prevent runaway tool calls
-- **Timeout:** Shell commands have a 30-second timeout by default
+- **Permission prompts by default:** No destructive tool runs without your say-so
+- **Session-scoped "always":** The `a` response only lasts for the current session
+- **No implicit escalation:** The model cannot bypass the permission system
+- **Iteration limit:** The agent loop stops after 20 iterations
+- **Shell timeout:** Commands timeout after 30 seconds by default

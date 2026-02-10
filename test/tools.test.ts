@@ -1,45 +1,78 @@
-import { describe, it, expect } from 'vitest';
-import { getEnabledTools } from '../src/tools/schema.js';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { getAllTools } from '../src/tools/schema.js';
+import { executeReadFile } from '../src/tools/readFile.js';
 import { executeWriteFile } from '../src/tools/writeFile.js';
 import { executeShell } from '../src/tools/execShell.js';
+import { join } from 'node:path';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 
-describe('getEnabledTools', () => {
-  it('always includes read_file', () => {
-    const tools = getEnabledTools({ allowWrite: false, allowShell: false });
-    expect(tools).toHaveLength(1);
-    expect(tools[0]?.function.name).toBe('read_file');
-  });
-
-  it('includes write_file when allowed', () => {
-    const tools = getEnabledTools({ allowWrite: true, allowShell: false });
-    expect(tools).toHaveLength(2);
-    expect(tools.some((t) => t.function.name === 'write_file')).toBe(true);
-  });
-
-  it('includes exec_shell when allowed', () => {
-    const tools = getEnabledTools({ allowWrite: false, allowShell: true });
-    expect(tools).toHaveLength(2);
-    expect(tools.some((t) => t.function.name === 'exec_shell')).toBe(true);
-  });
-
-  it('includes all tools when both flags are set', () => {
-    const tools = getEnabledTools({ allowWrite: true, allowShell: true });
+describe('getAllTools', () => {
+  it('always returns all three tools', () => {
+    const tools = getAllTools();
     expect(tools).toHaveLength(3);
+    const names = tools.map((t) => t.function.name);
+    expect(names).toContain('read_file');
+    expect(names).toContain('write_file');
+    expect(names).toContain('exec_shell');
   });
 });
 
-describe('executeWriteFile guard', () => {
-  it('throws when writing is not allowed', async () => {
-    await expect(
-      executeWriteFile({ path: '/tmp/test.txt', content: 'hello' }, false),
-    ).rejects.toThrow('File writing is disabled');
+describe('executeReadFile', () => {
+  it('reads an existing file', async () => {
+    const content = await executeReadFile({ path: 'package.json' });
+    expect(content).toContain('caretforge');
   });
-});
 
-describe('executeShell guard', () => {
-  it('throws when shell is not allowed', async () => {
-    await expect(executeShell({ command: 'echo hello' }, false)).rejects.toThrow(
-      'Shell execution is disabled',
+  it('throws for missing file', async () => {
+    await expect(executeReadFile({ path: '/nonexistent-file-xyz' })).rejects.toThrow(
+      'Failed to read file',
     );
+  });
+});
+
+describe('executeWriteFile', () => {
+  let tmpDir: string;
+
+  beforeEach(async () => {
+    tmpDir = await mkdtemp(join(tmpdir(), 'caretforge-test-'));
+  });
+
+  afterEach(async () => {
+    await rm(tmpDir, { recursive: true, force: true });
+  });
+
+  it('writes a file and reports success', async () => {
+    const target = join(tmpDir, 'hello.txt');
+    const result = await executeWriteFile({ path: target, content: 'hello world' });
+    expect(result).toContain('Wrote');
+    expect(result).toContain(target);
+  });
+
+  it('creates parent directories', async () => {
+    const target = join(tmpDir, 'a', 'b', 'c.txt');
+    const result = await executeWriteFile({ path: target, content: 'nested' });
+    expect(result).toContain('Wrote');
+  });
+});
+
+describe('executeShell', () => {
+  it('captures stdout and exit code', async () => {
+    const result = await executeShell({ command: 'echo hello' });
+    const parsed = JSON.parse(result);
+    expect(parsed.stdout).toBe('hello');
+    expect(parsed.exitCode).toBe(0);
+  });
+
+  it('captures stderr', async () => {
+    const result = await executeShell({ command: 'echo err >&2' });
+    const parsed = JSON.parse(result);
+    expect(parsed.stderr).toBe('err');
+  });
+
+  it('handles failing commands', async () => {
+    const result = await executeShell({ command: 'exit 42' });
+    const parsed = JSON.parse(result);
+    expect(parsed.exitCode).toBe(42);
   });
 });

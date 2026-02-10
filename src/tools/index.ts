@@ -5,21 +5,15 @@ import { executeShell } from './execShell.js';
 import { ToolError } from '../util/errors.js';
 import { getLogger } from '../util/logger.js';
 
-export { getEnabledTools } from './schema.js';
-
-export interface ToolExecutionContext {
-  allowWrite: boolean;
-  allowShell: boolean;
-}
+export { getAllTools, getEnabledTools } from './schema.js';
 
 /**
  * Dispatch a tool call to the appropriate handler.
  * Returns a string result to feed back to the model.
+ *
+ * Permission checking is the caller's responsibility (see agent loop).
  */
-export async function executeTool(
-  toolCall: ToolCall,
-  context: ToolExecutionContext,
-): Promise<string> {
+export async function executeTool(toolCall: ToolCall): Promise<string> {
   const log = getLogger();
   const { name } = toolCall.function;
 
@@ -37,20 +31,17 @@ export async function executeTool(
       return executeReadFile({ path: args['path'] as string });
 
     case 'write_file':
-      return executeWriteFile(
-        { path: args['path'] as string, content: args['content'] as string },
-        context.allowWrite,
-      );
+      return executeWriteFile({
+        path: args['path'] as string,
+        content: args['content'] as string,
+      });
 
     case 'exec_shell':
-      return executeShell(
-        {
-          command: args['command'] as string,
-          cwd: args['cwd'] as string | undefined,
-          timeout: args['timeout'] as number | undefined,
-        },
-        context.allowShell,
-      );
+      return executeShell({
+        command: args['command'] as string,
+        cwd: args['cwd'] as string | undefined,
+        timeout: args['timeout'] as number | undefined,
+      });
 
     default:
       throw new ToolError(`Unknown tool: ${name}`);

@@ -8,16 +8,16 @@ import { enableTrace } from '../util/logger.js';
 
 export function createProgram(): Command {
   const program = new Command('caretforge')
-    .description('CaretForge — BYOM coding-agent CLI with pluggable providers')
+    .description('CaretForge — BYOM coding-agent CLI')
     .version('0.1.0')
-    .option('--provider <name>', 'Provider to use (default: azure-foundry)')
+    .option('--provider <name>', 'Provider to use')
     .option('--model <id>', 'Model ID to use')
     .option('--stream', 'Enable streaming output (default)', true)
     .option('--no-stream', 'Disable streaming output')
     .option('--json', 'Emit structured JSON output')
     .option('--trace', 'Enable verbose debug logging')
-    .option('--allow-shell', 'Enable the shell execution tool', false)
-    .option('--allow-write', 'Enable the file write tool', false)
+    .option('--allow-shell', 'Auto-approve shell execution (skip prompts)', false)
+    .option('--allow-write', 'Auto-approve file writes (skip prompts)', false)
     .hook('preAction', (_thisCommand, actionCommand) => {
       const opts = actionCommand.optsWithGlobals();
       if (opts['trace']) {

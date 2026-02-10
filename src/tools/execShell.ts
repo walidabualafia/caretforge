@@ -16,13 +16,10 @@ export interface ExecShellResult {
 const DEFAULT_TIMEOUT_MS = 30_000;
 
 /**
- * Execute a shell command. Guarded by --allow-shell flag.
+ * Execute a shell command. Permission checking is handled by the agent loop
+ * before this function is called.
  */
-export async function executeShell(args: ExecShellArgs, allowed: boolean): Promise<string> {
-  if (!allowed) {
-    throw new ToolError('Shell execution is disabled. Pass --allow-shell to enable this tool.');
-  }
-
+export async function executeShell(args: ExecShellArgs): Promise<string> {
   const timeout = args.timeout ?? DEFAULT_TIMEOUT_MS;
 
   return new Promise<string>((resolve, reject) => {

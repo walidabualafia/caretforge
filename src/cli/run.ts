@@ -1,11 +1,14 @@
 import { Command } from 'commander';
-import ora from 'ora';
+import { createInterface } from 'node:readline/promises';
+import { stdin, stdout } from 'node:process';
 import { userMessage } from '../core/messages.js';
 import { buildRunPrompt } from '../core/prompts.js';
 import { runAgent, type AgentOptions } from '../core/agent.js';
 import { resolveProvider } from './shared.js';
 import { getLogger } from '../util/logger.js';
 import { formatError } from '../util/errors.js';
+import { PermissionManager } from '../ui/permissions.js';
+import { formatToolCallStart, formatToolResult, printError } from '../ui/format.js';
 
 export const runCommand = new Command('run')
   .description('Run a task non-interactively (reads from args or stdin)')
@@ -33,35 +36,46 @@ export const runCommand = new Command('run')
     }
 
     const provider = await resolveProvider(globals);
-    const model: string = globals['model'] ?? 'gpt-4o';
+    const model: string = globals['model'] ?? getDefaultModel(provider.name);
     const stream: boolean = globals['stream'] ?? true;
-    const allowWrite: boolean = globals['allowWrite'] ?? false;
-    const allowShell: boolean = globals['allowShell'] ?? false;
     const jsonOutput: boolean = globals['json'] ?? false;
 
     log.debug({ task: task.slice(0, 100), model }, 'Running task');
+
+    // Set up permission manager
+    let rl: ReturnType<typeof createInterface> | undefined;
+    if (process.stdin.isTTY && !jsonOutput) {
+      rl = createInterface({ input: stdin, output: stdout });
+    }
+
+    const permissions = new PermissionManager({
+      allowWrite: globals['allowWrite'] ?? false,
+      allowShell: globals['allowShell'] ?? false,
+      readline: rl,
+    });
 
     const agentOptions: AgentOptions = {
       provider,
       model,
       stream: !jsonOutput && stream,
-      allowWrite,
-      allowShell,
       onToken: jsonOutput ? undefined : (token) => process.stdout.write(token),
       onToolCall: jsonOutput
         ? undefined
-        : (tc) => {
-            console.log(`\n  [tool] ${tc.function.name}(${tc.function.arguments})`);
+        : (name, args) => {
+            console.log('');
+            console.log(formatToolCallStart(name, args));
           },
+      onToolResult: jsonOutput
+        ? undefined
+        : (name, result) => {
+            console.log(formatToolResult(name, result));
+          },
+      onPermissionRequest: (name, args) => permissions.check(name, args),
     };
-
-    const spinner = jsonOutput || stream ? undefined : ora('Working...').start();
 
     try {
       const history = [userMessage(buildRunPrompt(task))];
       const result = await runAgent(history, agentOptions);
-
-      spinner?.stop();
 
       if (jsonOutput) {
         const output = {
@@ -74,19 +88,31 @@ export const runCommand = new Command('run')
           messages: result.messages.slice(1), // skip system
         };
         console.log(JSON.stringify(output, null, 2));
-      } else if (!stream) {
+      } else if (!stream && result.finalContent) {
         console.log(result.finalContent);
       } else {
-        // Streaming already printed; just ensure newline
+        // Streaming already printed; ensure clean newline
         console.log('');
       }
     } catch (err) {
-      spinner?.stop();
       if (jsonOutput) {
         console.log(JSON.stringify({ error: formatError(err) }));
       } else {
-        console.error(`Error: ${formatError(err)}`);
+        printError(formatError(err));
       }
       process.exit(1);
+    } finally {
+      rl?.close();
     }
   });
+
+function getDefaultModel(providerName: string): string {
+  switch (providerName) {
+    case 'azure-anthropic':
+      return 'claude-opus-4-6';
+    case 'azure-foundry':
+      return 'gpt-4.1';
+    default:
+      return 'gpt-4o';
+  }
+}

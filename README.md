@@ -5,7 +5,8 @@
 <h1 align="center">CaretForge</h1>
 
 <p align="center">
-  <strong>BYOM (Bring Your Own Model) coding-agent CLI</strong> with pluggable providers, starting with Azure AI Foundry endpoints.
+  <strong>An agentic coding tool that lives in your terminal.</strong><br>
+  Bring your own model, plug in your credentials, and let it read, write, and execute.
 </p>
 
 <p align="center">
@@ -22,7 +23,15 @@
 
 ---
 
-CaretForge is a production-grade, extensible CLI that lets you plug in your own model credentials and switch between providers. It supports streaming responses, tool-use (file read/write, shell execution), and safe-by-default execution.
+## What is CaretForge?
+
+CaretForge is a BYOM (Bring Your Own Model) coding agent CLI — similar in spirit to [Claude Code](https://github.com/anthropics/claude-code), but open-source and provider-agnostic. You bring your own model credentials, and CaretForge gives you an agentic coding assistant in your terminal that can:
+
+- **Read files** in your codebase
+- **Write and create files** (with permission)
+- **Execute shell commands** (with permission)
+- **Stream responses** in real-time
+- **Use any model** via pluggable providers (Azure OpenAI, Azure Anthropic, and more)
 
 > **What it is:** A coding assistant CLI you control — your models, your credentials, your rules.
 >
@@ -44,72 +53,94 @@ git clone https://github.com/walidabualafia/caretforge.git
 cd caretforge
 pnpm install
 pnpm build
+pnpm link --global   # makes 'caretforge' available everywhere
 ```
 
-### Link the CLI globally (optional)
-
-```bash
-pnpm link --global
-```
-
-### Initialize configuration
+### Configure
 
 ```bash
 caretforge config init
 ```
 
-This creates a config file at `~/.config/caretforge/config.json` (macOS/Linux) or `%APPDATA%\caretforge\config.json` (Windows).
-
-### Configure Azure AI Foundry
-
-Edit your config file or use environment variables:
-
-```bash
-export CARETFORGE_AZURE_ENDPOINT="https://YOUR-RESOURCE.openai.azure.com"
-export CARETFORGE_AZURE_API_KEY="your-api-key-here"
-```
-
-Or edit `~/.config/caretforge/config.json`:
+Edit `~/.config/caretforge/config.json` with your provider credentials. For example, with Azure Anthropic (Claude):
 
 ```json
 {
-  "defaultProvider": "azure-foundry",
+  "defaultProvider": "azure-anthropic",
   "providers": {
-    "azureFoundry": {
-      "endpoint": "https://YOUR-RESOURCE.openai.azure.com",
-      "apiKey": "your-api-key-here",
-      "authMode": "apiKey",
-      "models": [{ "id": "gpt-4o", "description": "GPT-4o on Azure AI Foundry" }]
+    "azureAnthropic": {
+      "endpoint": "https://YOUR-RESOURCE.openai.azure.com/anthropic",
+      "apiKey": "your-api-key",
+      "models": [{ "id": "claude-opus-4-6" }]
     }
-  },
-  "telemetry": false
+  }
 }
 ```
 
-### Validate your setup
+### Validate
 
 ```bash
 caretforge doctor
+```
+
+### Go
+
+```bash
+caretforge                          # interactive chat
+caretforge "explain this project"   # one-shot task
 ```
 
 ---
 
 ## Usage
 
+CaretForge works just like Claude Code — run it with no arguments for interactive mode, or pass a task directly:
+
 ### Interactive Chat
 
 ```bash
-caretforge chat
-caretforge chat --model gpt-4o
-caretforge chat --no-stream
+caretforge                              # start chatting
+caretforge --model gpt-4.1             # use a specific model
+caretforge --provider azure-foundry    # use a specific provider
 ```
 
-### Non-interactive Run
+Inside the REPL, you have slash commands:
+
+| Command       | Description                      |
+| ------------- | -------------------------------- |
+| `/help`       | Show available commands          |
+| `/model <id>` | Switch model mid-conversation    |
+| `/clear`      | Clear conversation history       |
+| `/compact`    | Trim older messages from history |
+| `/exit`       | Exit CaretForge                  |
+
+### One-Shot Tasks
 
 ```bash
-caretforge run "Explain what this project does"
-caretforge run "Refactor the auth module" --allow-write
+caretforge "Refactor the auth module"
+caretforge "List all TODO comments" --json
 echo "Fix the bug in server.ts" | caretforge run
+```
+
+### Permissions
+
+When the agent wants to write a file or run a shell command, **you'll be prompted**:
+
+```
+  ⚡ Write to src/utils.ts
+  Allow? [y]es / [n]o / [a]lways
+```
+
+- **y** — allow this one time
+- **n** — deny (the agent will adapt)
+- **a** — allow all future calls of this type for the session
+
+To skip prompts entirely, use the auto-approve flags:
+
+```bash
+caretforge --allow-write              # auto-approve file writes
+caretforge --allow-shell              # auto-approve shell execution
+caretforge --allow-write --allow-shell  # full autonomy
 ```
 
 ### Structured JSON Output
@@ -118,20 +149,24 @@ echo "Fix the bug in server.ts" | caretforge run
 caretforge run "List all TODO comments" --json
 ```
 
-### Model Management
+---
 
-```bash
-caretforge model list
-caretforge model list --json
-```
+## Providers
 
-### Configuration
+CaretForge supports multiple providers through a pluggable interface:
 
-```bash
-caretforge config init              # Create starter config
-caretforge config init --with-secrets  # Include API key placeholder
-caretforge config show              # Show config (secrets redacted)
-```
+| Provider          | Models                    | Status    |
+| ----------------- | ------------------------- | --------- |
+| `azure-anthropic` | Claude Opus, Sonnet, etc. | **Ready** |
+| `azure-foundry`   | GPT-4o, GPT-4.1, etc.     | **Ready** |
+| `azure-agents`    | Azure AI Agent Service    | Preview   |
+
+### Adding a New Provider
+
+1. Create `src/providers/myProvider.ts` implementing the `Provider` interface
+2. Register it in `src/cli/shared.ts`
+3. Add a Zod config schema in `src/config/schema.ts`
+4. Document it
 
 ---
 
@@ -139,23 +174,25 @@ caretforge config show              # Show config (secrets redacted)
 
 ### Global Flags
 
-| Flag            | Description                 | Default         |
-| --------------- | --------------------------- | --------------- |
-| `--provider`    | Provider name               | `azure-foundry` |
-| `--model`       | Model ID                    | `gpt-4o`        |
-| `--stream`      | Enable streaming output     | `true`          |
-| `--no-stream`   | Disable streaming           | —               |
-| `--json`        | Structured JSON output      | `false`         |
-| `--trace`       | Verbose debug logging       | `false`         |
-| `--allow-shell` | Enable shell execution tool | `false`         |
-| `--allow-write` | Enable file write tool      | `false`         |
+| Flag            | Description                  | Default     |
+| --------------- | ---------------------------- | ----------- |
+| `--provider`    | Provider name                | from config |
+| `--model`       | Model ID                     | from config |
+| `--stream`      | Enable streaming output      | `true`      |
+| `--no-stream`   | Disable streaming            | —           |
+| `--json`        | Structured JSON output       | `false`     |
+| `--trace`       | Verbose debug logging        | `false`     |
+| `--allow-shell` | Auto-approve shell execution | `false`     |
+| `--allow-write` | Auto-approve file writes     | `false`     |
 
 ### Commands
 
 | Command       | Description                         |
 | ------------- | ----------------------------------- |
-| `chat`        | Interactive chat with streaming     |
-| `run <task>`  | Non-interactive task execution      |
+| _(none)_      | Interactive chat (default)          |
+| `"task"`      | One-shot task execution             |
+| `chat`        | Interactive chat (explicit)         |
+| `run <task>`  | One-shot task execution (explicit)  |
 | `model list`  | Show configured models              |
 | `config init` | Create configuration file           |
 | `config show` | Display config (secrets redacted)   |
@@ -189,13 +226,12 @@ CLI flags  >  Environment variables  >  Config file  >  Defaults
 
 ---
 
-## Security Notes
+## Security
 
-- **API keys are never printed in full.** The `config show` command and all log output use a redaction helper that masks secrets (showing only the first 4 and last 2 characters).
+- **Permission prompts by default.** Write and shell tools require explicit user approval per action (or `--allow-write` / `--allow-shell` to auto-approve).
+- **Secrets are never printed in full.** The `config show` command and logs use redaction (first 4, last 2 characters).
 - **`config init` does not write API keys** unless you pass `--with-secrets`.
-- **Shell execution is off by default.** You must explicitly pass `--allow-shell` to enable it.
-- **File writing is off by default.** You must explicitly pass `--allow-write` to enable it.
-- **Never commit your config file** if it contains secrets. The `.gitignore` excludes `.env` files; consider using environment variables for keys instead.
+- **Never commit your config file** with secrets. Use environment variables in CI/CD.
 
 ---
 
@@ -203,116 +239,63 @@ CLI flags  >  Environment variables  >  Config file  >  Defaults
 
 ```
 src/
-├── cli/            # Command definitions (commander)
+├── cli/            # Command definitions (Commander.js)
 │   ├── index.ts    # Program setup, global flags
-│   ├── chat.ts     # Interactive chat command
-│   ├── run.ts      # Non-interactive run command
+│   ├── chat.ts     # Interactive chat REPL
+│   ├── run.ts      # One-shot task execution
 │   ├── model.ts    # Model listing
 │   ├── configCmd.ts# Config init/show
 │   ├── doctor.ts   # Diagnostic checks
-│   └── shared.ts   # Provider resolution helper
-├── core/           # Agent loop, prompts, message types
-│   ├── agent.ts    # Main agent loop with tool dispatch
+│   └── shared.ts   # Provider resolution
+├── core/           # Agent loop and prompts
+│   ├── agent.ts    # Agent loop with tool dispatch + permissions
 │   ├── messages.ts # Message factory helpers
 │   └── prompts.ts  # System/user prompt templates
 ├── providers/      # Provider abstraction
 │   ├── provider.ts # Provider interface + shared types
-│   └── azureFoundry.ts  # Azure AI Foundry implementation
+│   ├── azureAnthropic.ts  # Azure Anthropic (Claude) provider
+│   ├── azureFoundry.ts    # Azure OpenAI provider
+│   └── azureAgents.ts     # Azure AI Agent Service provider
 ├── config/         # Configuration management
 │   ├── schema.ts   # Zod schemas + types
 │   ├── paths.ts    # Platform-aware config paths
-│   └── index.ts    # Load/save/init logic, env var merging
+│   └── index.ts    # Load/save/init, env var merging
 ├── tools/          # Tool definitions and executors
 │   ├── schema.ts   # Tool JSON schemas for function calling
-│   ├── readFile.ts # File reading (always enabled)
-│   ├── writeFile.ts# File writing (flag-guarded)
-│   ├── execShell.ts# Shell execution (flag-guarded)
+│   ├── readFile.ts # File reading
+│   ├── writeFile.ts# File writing
+│   ├── execShell.ts# Shell execution
 │   └── index.ts    # Tool dispatcher
+├── ui/             # Terminal UI
+│   ├── format.ts   # Colors, tool display, banners
+│   └── permissions.ts # Interactive permission prompts
 └── util/           # Shared utilities
-    ├── logger.ts   # Pino logger setup
+    ├── logger.ts   # Pino logger
     ├── errors.ts   # Error classes
-    └── redact.ts   # Secret redaction helpers
+    └── redact.ts   # Secret redaction
 ```
 
 ### Key Design Decisions
 
-- **Provider interface:** All providers implement the same `Provider` interface with `listModels()`, `createChatCompletion()`, and `createStreamingChatCompletion()`. Adding a new provider means implementing this interface.
-- **Safe by default:** Shell and file-write tools are disabled unless the user explicitly opts in with `--allow-shell` / `--allow-write`.
-- **Agent loop:** The agent sends messages to the model; if the model requests tool calls, they're executed and results fed back. This loops until the model produces a text-only response (or hits the iteration limit).
-- **Streaming via SSE:** The Azure provider parses Server-Sent Events manually from the response body for real-time token output.
-- **Config merging:** Config file values can be overridden by environment variables, which can be overridden by CLI flags.
-
----
-
-## Adding a New Provider
-
-1. Create `src/providers/myProvider.ts` implementing the `Provider` interface from `src/providers/provider.ts`.
-
-2. Register it in `src/cli/shared.ts` in the `resolveProvider` switch statement:
-
-```typescript
-case 'my-provider': {
-  const config = /* load from config */;
-  return new MyProvider(config);
-}
-```
-
-3. Add a Zod schema for its config in `src/config/schema.ts` and add the field to `providersSchema`.
-
-4. Document the new provider in this README.
+- **Claude Code-style UX:** `caretforge` alone starts interactive mode; `caretforge "task"` runs a one-shot task. Permission prompts appear inline.
+- **Provider interface:** All providers implement `listModels()`, `createChatCompletion()`, and `createStreamingChatCompletion()`.
+- **Permission model:** The model always knows about all tools. Permission is checked at execution time, not tool selection time. Users approve per-action or use flags to auto-approve.
+- **Agent loop:** Messages go to the model → tool calls are executed → results are fed back → loop until text response (max 20 iterations).
+- **Streaming via SSE:** Providers parse Server-Sent Events for real-time token output.
 
 ---
 
 ## Development
 
 ```bash
-# Install dependencies
-pnpm install
-
-# Build TypeScript
-pnpm build
-
-# Run tests
-pnpm test
-
-# Run tests in watch mode
-pnpm test:watch
-
-# Lint
-pnpm lint
-
-# Format
-pnpm format
-
-# Type-check without emitting
-pnpm typecheck
+pnpm install       # install dependencies
+pnpm build         # compile TypeScript
+pnpm test          # run tests
+pnpm test:watch    # tests in watch mode
+pnpm lint          # lint with ESLint
+pnpm format        # format with Prettier
+pnpm typecheck     # type-check without emitting
 ```
-
-### Running locally without building
-
-```bash
-npx tsx src/index.ts chat
-npx tsx src/index.ts doctor
-```
-
----
-
-## Azure AI Foundry Endpoint Notes
-
-The provider constructs URLs in this format:
-
-```
-{endpoint}/openai/deployments/{model}/chat/completions?api-version={apiVersion}
-```
-
-- **`endpoint`**: Your Azure OpenAI resource URL (e.g., `https://my-resource.openai.azure.com`)
-- **`model`**: The deployment name (passed via `--model` or config)
-- **`chatCompletionPath`**: Configurable, defaults to `/chat/completions`
-- **`apiVersion`**: Configurable, defaults to `2024-08-01-preview`
-
-If your Azure AI Foundry endpoint uses a different URL structure, override `chatCompletionPath` in your config.
-
-Authentication is via the `api-key` header. Stubs exist for `azureCli` and `managedIdentity` auth modes but are not yet implemented.
 
 ---
 

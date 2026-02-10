@@ -6,7 +6,7 @@ import type {
 } from '../providers/provider.js';
 import { systemMessage, assistantMessage, toolResultMessage } from './messages.js';
 import { SYSTEM_PROMPT } from './prompts.js';
-import { executeTool, getEnabledTools, type ToolExecutionContext } from '../tools/index.js';
+import { executeTool, getAllTools } from '../tools/index.js';
 import { getLogger } from '../util/logger.js';
 import { ToolError } from '../util/errors.js';
 
@@ -16,12 +16,23 @@ export interface AgentOptions {
   provider: Provider;
   model: string;
   stream: boolean;
-  allowWrite: boolean;
-  allowShell: boolean;
+
   /** Called for each text token during streaming. */
   onToken?: (token: string) => void;
-  /** Called when the agent begins a tool call. */
-  onToolCall?: (toolCall: ToolCall) => void;
+
+  /** Called when the agent begins a tool call (before permission check). */
+  onToolCall?: (toolName: string, args: Record<string, unknown>) => void;
+
+  /** Called after a tool executes with its result string. */
+  onToolResult?: (toolName: string, result: string) => void;
+
+  /**
+   * Called before executing a tool that needs permission (write_file, exec_shell).
+   * Return `true` to allow, `false` to deny.
+   * If not provided, dangerous tools are denied by default.
+   */
+  onPermissionRequest?: (toolName: string, args: Record<string, unknown>) => Promise<boolean>;
+
   /** Max agent loop iterations to prevent runaway tool calls. */
   maxIterations?: number;
 }
@@ -34,6 +45,9 @@ export interface AgentResult {
 }
 
 const DEFAULT_MAX_ITERATIONS = 20;
+
+// Tools that require explicit permission
+const DANGEROUS_TOOLS = new Set(['write_file', 'exec_shell']);
 
 // ── Agent loop ────────────────────────────────────────────────
 
@@ -48,15 +62,9 @@ export async function runAgent(
   const log = getLogger();
   const startTime = Date.now();
   const maxIter = options.maxIterations ?? DEFAULT_MAX_ITERATIONS;
-  const toolContext: ToolExecutionContext = {
-    allowWrite: options.allowWrite,
-    allowShell: options.allowShell,
-  };
 
-  // Build tool definitions based on enabled flags
-  const tools = options.provider.supportsTools
-    ? getEnabledTools({ allowWrite: options.allowWrite, allowShell: options.allowShell })
-    : [];
+  // Always send all tools — permission is checked at execution time
+  const tools = options.provider.supportsTools ? getAllTools() : [];
 
   // Ensure system prompt is first
   const messages: ChatMessage[] = [systemMessage(SYSTEM_PROMPT), ...history];
@@ -96,18 +104,43 @@ export async function runAgent(
     // Execute each tool call
     for (const tc of responseMessage.toolCalls) {
       toolCallCount++;
-      options.onToolCall?.(tc);
+
+      let args: Record<string, unknown>;
+      try {
+        args = JSON.parse(tc.function.arguments) as Record<string, unknown>;
+      } catch {
+        args = {};
+      }
+
+      // Notify about tool call
+      options.onToolCall?.(tc.function.name, args);
       log.debug({ tool: tc.function.name, id: tc.id }, 'Tool call requested');
 
+      // Permission check for dangerous tools
+      if (DANGEROUS_TOOLS.has(tc.function.name)) {
+        const allowed = options.onPermissionRequest
+          ? await options.onPermissionRequest(tc.function.name, args)
+          : false;
+
+        if (!allowed) {
+          const deniedMsg = `Permission denied by user. The user did not allow ${tc.function.name}.`;
+          messages.push(toolResultMessage(tc.id, deniedMsg));
+          options.onToolResult?.(tc.function.name, deniedMsg);
+          continue;
+        }
+      }
+
+      // Execute the tool
       let result: string;
       try {
-        result = await executeTool(tc, toolContext);
+        result = await executeTool(tc);
       } catch (err) {
         result =
           err instanceof ToolError ? `Error: ${err.message}` : `Error: ${(err as Error).message}`;
       }
 
       messages.push(toolResultMessage(tc.id, result));
+      options.onToolResult?.(tc.function.name, result);
     }
   }
 
@@ -145,7 +178,6 @@ async function handleStreaming(
     // Accumulate tool call deltas
     if (chunk.delta.toolCalls) {
       for (const tc of chunk.delta.toolCalls) {
-        // Tool calls come in indexed; we use a map keyed by position
         const idx = toolCallsMap.size; // simplified: assume sequential
         const existing = toolCallsMap.get(idx);
         if (!existing && tc.id) {

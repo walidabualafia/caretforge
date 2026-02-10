@@ -2,7 +2,17 @@
 
 This guide gets you from zero to chatting with your model in under 5 minutes.
 
-## 1. Initialize Configuration
+## 1. Install & Build
+
+```bash
+git clone https://github.com/walidabualafia/caretforge.git
+cd caretforge
+pnpm install
+pnpm build
+pnpm link --global
+```
+
+## 2. Initialize Configuration
 
 ```bash
 caretforge config init
@@ -13,18 +23,41 @@ This creates a config file at:
 - **macOS / Linux:** `~/.config/caretforge/config.json`
 - **Windows:** `%APPDATA%\caretforge\config.json`
 
-## 2. Set Your Azure Credentials
+## 3. Set Your Credentials
 
-The fastest way is with environment variables:
+Edit the config file with your provider details. For example, with **Azure Anthropic (Claude)**:
 
-```bash
-export CARETFORGE_AZURE_ENDPOINT="https://YOUR-RESOURCE.services.ai.azure.com"
-export CARETFORGE_AZURE_API_KEY="your-api-key-here"
+```json
+{
+  "defaultProvider": "azure-anthropic",
+  "providers": {
+    "azureAnthropic": {
+      "endpoint": "https://YOUR-RESOURCE.openai.azure.com/anthropic",
+      "apiKey": "your-api-key-here",
+      "models": [{ "id": "claude-opus-4-6" }]
+    }
+  }
+}
 ```
 
-Or edit the config file directly — see [Configuration](/getting-started/configuration) for details.
+Or with **Azure OpenAI**:
 
-## 3. Check Your Setup
+```json
+{
+  "defaultProvider": "azure-foundry",
+  "providers": {
+    "azureFoundry": {
+      "endpoint": "https://YOUR-RESOURCE.openai.azure.com",
+      "apiKey": "your-api-key-here",
+      "models": [{ "id": "gpt-4.1" }]
+    }
+  }
+}
+```
+
+You can also use environment variables — see [Configuration](/getting-started/configuration) for details.
+
+## 4. Check Your Setup
 
 ```bash
 caretforge doctor
@@ -37,58 +70,62 @@ You should see all green checkmarks:
 
   ✓  Node.js version: v20.x.x
   ✓  Config file: ~/.config/caretforge/config.json
-  ✓  Config valid: Default provider: azure-foundry
-  ✓  Azure endpoint: https://your-resource.services.ai.azure.com
-  ✓  Azure API key: Auth mode: apiKey
-  ✓  Azure models: gpt-4o
-
-  All checks passed!
+  ✓  Config valid: Default provider: azure-anthropic
 ```
 
-## 4. Start Chatting
+## 5. Start Chatting
+
+Just run `caretforge`:
+
+```
+$ caretforge
+
+  CaretForge v0.1.0
+  azure-anthropic · claude-opus-4-6
+  Type /help for commands · Ctrl+C to exit
+
+> What does this project do?
+
+This is a BYOM coding-agent CLI that lets you...
+
+> Read the package.json and tell me the version
+
+  ▶ Read package.json
+    42 lines
+
+The project version is 0.1.0.
+
+> /exit
+  Goodbye!
+```
+
+## 6. Run a One-Shot Task
 
 ```bash
-caretforge chat --model gpt-4o
-```
-
-```
-  CaretForge chat  |  provider: azure-foundry  |  model: gpt-4o
-  Type "exit" or Ctrl+C to quit.
-
-you > What is the capital of France?
-
-assistant > The capital of France is Paris.
-
-you > exit
-
-Goodbye!
-```
-
-## 5. Run a One-Shot Task
-
-```bash
-caretforge run "Explain what a Makefile does in 2 sentences" --model gpt-4o
+caretforge "Explain what this project does"
 ```
 
 Or pipe input:
 
 ```bash
-echo "Summarize this error: ECONNREFUSED" | caretforge run --model gpt-4o
+echo "Summarize this error: ECONNREFUSED" | caretforge run
 ```
 
-## 6. Enable Tools
+## 7. Permissions
 
-By default, the agent can only **read files**. To enable more capabilities:
+When the agent needs to write a file or run a command, you'll be prompted:
+
+```
+  ⚡ Write to src/utils.ts
+  Allow? [y]es / [n]o / [a]lways
+```
+
+Choose **a** to allow all future writes for the session. Or use flags to skip prompts:
 
 ```bash
-# Allow the agent to write files
-caretforge chat --allow-write
-
-# Allow the agent to run shell commands
-caretforge chat --allow-shell
-
-# Allow both
-caretforge chat --allow-write --allow-shell
+caretforge --allow-write                # auto-approve writes
+caretforge --allow-shell                # auto-approve shell
+caretforge --allow-write --allow-shell  # full autonomy
 ```
 
 ::: warning

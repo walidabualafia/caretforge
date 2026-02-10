@@ -8,18 +8,16 @@ export interface WriteFileArgs {
 }
 
 /**
- * Write content to a file. Guarded by --allow-write flag.
+ * Write content to a file. Permission checking is handled by the agent loop
+ * before this function is called.
  */
-export async function executeWriteFile(args: WriteFileArgs, allowed: boolean): Promise<string> {
-  if (!allowed) {
-    throw new ToolError('File writing is disabled. Pass --allow-write to enable this tool.');
-  }
-
+export async function executeWriteFile(args: WriteFileArgs): Promise<string> {
   const target = resolve(args.path);
   try {
     await mkdir(dirname(target), { recursive: true });
     await writeFile(target, args.content, 'utf-8');
-    return `Successfully wrote ${args.content.length} characters to ${target}`;
+    const lines = args.content.split('\n').length;
+    return `Wrote ${lines} line${lines !== 1 ? 's' : ''} to ${target}`;
   } catch (err) {
     throw new ToolError(
       `Failed to write file "${target}": ${(err as Error).message}`,
