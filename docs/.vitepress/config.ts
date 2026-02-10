@@ -3,7 +3,8 @@ import { defineConfig } from 'vitepress';
 export default defineConfig({
   title: 'CaretForge',
   description: 'BYOM coding-agent CLI with pluggable providers',
-  head: [['link', { rel: 'icon', href: '/logo.png' }]],
+  base: '/caretforge/',
+  head: [['link', { rel: 'icon', href: '/caretforge/logo.png' }]],
 
   themeConfig: {
     logo: '/logo.png',
