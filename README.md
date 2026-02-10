@@ -299,6 +299,12 @@ pnpm typecheck     # type-check without emitting
 
 ---
 
+## Contributing
+
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions, development workflow, and PR guidelines.
+
+---
+
 ## License
 
-MIT
+[MIT](LICENSE)
