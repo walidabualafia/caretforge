@@ -1,5 +1,6 @@
 import { loadConfig } from '../config/index.js';
 import { AzureFoundryProvider } from '../providers/azureFoundry.js';
+import { AzureAgentsProvider } from '../providers/azureAgents.js';
 import type { Provider } from '../providers/provider.js';
 import { ConfigError } from '../util/errors.js';
 
@@ -22,9 +23,19 @@ export async function resolveProvider(globals: Record<string, unknown>): Promise
       return new AzureFoundryProvider(azureConfig);
     }
 
+    case 'azure-agents': {
+      const agentsConfig = config.providers.azureAgents;
+      if (!agentsConfig) {
+        throw new ConfigError(
+          'Azure Agents provider is not configured. Set CARETFORGE_AGENT_ENDPOINT and CARETFORGE_AGENT_ID env vars, or add providers.azureAgents to config.',
+        );
+      }
+      return new AzureAgentsProvider(agentsConfig);
+    }
+
     default:
       throw new ConfigError(
-        `Unknown provider "${providerName}". Available providers: azure-foundry`,
+        `Unknown provider "${providerName}". Available providers: azure-foundry, azure-agents`,
       );
   }
 }

@@ -7,7 +7,12 @@ import { ConfigError } from '../util/errors.js';
 import { getLogger } from '../util/logger.js';
 
 export { getConfigDir, getConfigPath } from './paths.js';
-export { configSchema, type CaretForgeConfig, type AzureFoundryConfig } from './schema.js';
+export {
+  configSchema,
+  type CaretForgeConfig,
+  type AzureFoundryConfig,
+  type AzureAgentsConfig,
+} from './schema.js';
 
 // ── Merge helper ──────────────────────────────────────────────
 
@@ -44,10 +49,27 @@ function getEnvOverrides(): Record<string, unknown> {
 
   if (azureEndpoint || azureApiKey || azureAuthMode) {
     overrides['providers'] = {
+      ...((overrides['providers'] as Record<string, unknown>) ?? {}),
       azureFoundry: {
         ...(azureEndpoint ? { endpoint: azureEndpoint } : {}),
         ...(azureApiKey ? { apiKey: azureApiKey } : {}),
         ...(azureAuthMode ? { authMode: azureAuthMode } : {}),
+      },
+    };
+  }
+
+  // Azure Agents env vars
+  const agentEndpoint = process.env['CARETFORGE_AGENT_ENDPOINT'];
+  const agentId = process.env['CARETFORGE_AGENT_ID'];
+  const agentApiKey = process.env['CARETFORGE_AGENT_API_KEY'];
+
+  if (agentEndpoint || agentId) {
+    overrides['providers'] = {
+      ...((overrides['providers'] as Record<string, unknown>) ?? {}),
+      azureAgents: {
+        ...(agentEndpoint ? { endpoint: agentEndpoint } : {}),
+        ...(agentId ? { agentId } : {}),
+        ...(agentApiKey ? { apiKey: agentApiKey } : {}),
       },
     };
   }
