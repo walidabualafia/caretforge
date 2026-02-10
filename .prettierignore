@@ -2,3 +2,5 @@ dist
 node_modules
 coverage
 pnpm-lock.yaml
+docs/.vitepress/dist
+docs/.vitepress/cache

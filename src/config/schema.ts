@@ -20,7 +20,9 @@ export const azureFoundryConfigSchema = z.object({
 
 // ── Azure AI Agents provider config ───────────────────────────
 export const azureAgentsConfigSchema = z.object({
-  endpoint: z.string().url('Must be a valid URL, e.g. https://RESOURCE.services.ai.azure.com/api/projects/PROJECT'),
+  endpoint: z
+    .string()
+    .url('Must be a valid URL, e.g. https://RESOURCE.services.ai.azure.com/api/projects/PROJECT'),
   agentId: z.string().min(1, 'Agent ID is required'),
   apiKey: z.string().optional(),
   /** API version query parameter. */

@@ -90,8 +90,7 @@ export class AzureAgentsProvider implements Provider {
     const completedRun = await this.pollRun(threadId, runId, headers);
 
     if (completedRun['status'] !== 'completed') {
-      const errMsg =
-        completedRun['last_error']?.['message'] ?? completedRun['status'];
+      const errMsg = completedRun['last_error']?.['message'] ?? completedRun['status'];
       throw new ProviderError(`Agent run ended with status "${completedRun['status']}": ${errMsg}`);
     }
 
@@ -294,9 +293,7 @@ export class AzureAgentsProvider implements Provider {
     const response = await this.doFetch(url, 'GET', headers);
     const data = (await response.json()) as any;
 
-    const assistantMsg = data['data']?.find(
-      (m: any) => m['role'] === 'assistant',
-    );
+    const assistantMsg = data['data']?.find((m: any) => m['role'] === 'assistant');
 
     if (!assistantMsg) {
       throw new ProviderError('No assistant message found in thread after run completed');
@@ -312,9 +309,7 @@ export class AzureAgentsProvider implements Provider {
 
   // ── SSE parsing ───────────────────────────────────────────
 
-  private async *parseAgentSSE(
-    body: ReadableStream<Uint8Array>,
-  ): AsyncIterable<StreamChunk> {
+  private async *parseAgentSSE(body: ReadableStream<Uint8Array>): AsyncIterable<StreamChunk> {
     const reader = body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';

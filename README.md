@@ -1,6 +1,26 @@
-# CaretForge
+<p align="center">
+  <img src="assets/logo.png" alt="CaretForge Logo" width="200">
+</p>
 
-**BYOM (Bring Your Own Model) coding-agent CLI** with pluggable providers, starting with Azure AI Foundry endpoints.
+<h1 align="center">CaretForge</h1>
+
+<p align="center">
+  <strong>BYOM (Bring Your Own Model) coding-agent CLI</strong> with pluggable providers, starting with Azure AI Foundry endpoints.
+</p>
+
+<p align="center">
+  <a href="https://github.com/walidabualafia/caretforge/actions"><img src="https://github.com/walidabualafia/caretforge/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/walidabualafia/caretforge/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
+  <img src="https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg" alt="Node">
+</p>
+
+<p align="center">
+  <a href="https://walidabualafia.github.io/caretforge/">Documentation</a> ·
+  <a href="https://walidabualafia.github.io/caretforge/getting-started/quickstart.html">Quick Start</a> ·
+  <a href="https://walidabualafia.github.io/caretforge/reference/cli.html">CLI Reference</a>
+</p>
+
+---
 
 CaretForge is a production-grade, extensible CLI that lets you plug in your own model credentials and switch between providers. It supports streaming responses, tool-use (file read/write, shell execution), and safe-by-default execution.
 
