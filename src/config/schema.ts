@@ -29,10 +29,20 @@ export const azureAgentsConfigSchema = z.object({
   apiVersion: z.string().default('2025-05-15-preview'),
 });
 
+// ── Azure Anthropic provider config ───────────────────────────
+export const azureAnthropicConfigSchema = z.object({
+  endpoint: z.string().url('Must be a valid URL, e.g. https://RESOURCE.openai.azure.com/anthropic'),
+  apiKey: z.string().min(1, 'API key is required'),
+  /** Anthropic API version header. */
+  apiVersion: z.string().default('2023-06-01'),
+  models: z.array(modelSchema).default([]),
+});
+
 // ── Top-level providers map ───────────────────────────────────
 export const providersSchema = z.object({
   azureFoundry: azureFoundryConfigSchema.optional(),
   azureAgents: azureAgentsConfigSchema.optional(),
+  azureAnthropic: azureAnthropicConfigSchema.optional(),
 });
 
 // ── Root config ───────────────────────────────────────────────
@@ -46,5 +56,6 @@ export const configSchema = z.object({
 export type CaretForgeConfig = z.infer<typeof configSchema>;
 export type AzureFoundryConfig = z.infer<typeof azureFoundryConfigSchema>;
 export type AzureAgentsConfig = z.infer<typeof azureAgentsConfigSchema>;
+export type AzureAnthropicConfig = z.infer<typeof azureAnthropicConfigSchema>;
 export type ModelConfig = z.infer<typeof modelSchema>;
 export type ProvidersConfig = z.infer<typeof providersSchema>;

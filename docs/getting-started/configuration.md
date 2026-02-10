@@ -67,6 +67,32 @@ caretforge config init --with-secrets
 | `chatCompletionPath` | `string` | `"/chat/completions"`  | Path appended for chat completions                      |
 | `apiVersion`         | `string` | `"2024-08-01-preview"` | Azure API version query parameter                       |
 
+### Azure Anthropic Provider Fields
+
+For Anthropic models (Claude) deployed on Azure AI Foundry.
+
+| Field        | Type     | Default        | Description                                                 |
+| ------------ | -------- | -------------- | ----------------------------------------------------------- |
+| `endpoint`   | `string` | —              | **Required.** `https://RESOURCE.openai.azure.com/anthropic` |
+| `apiKey`     | `string` | —              | **Required.** Azure API key                                 |
+| `apiVersion` | `string` | `"2023-06-01"` | Anthropic API version header                                |
+| `models`     | `array`  | `[]`           | List of `{ id, description? }` objects                      |
+
+Example:
+
+```json
+{
+  "defaultProvider": "azure-anthropic",
+  "providers": {
+    "azureAnthropic": {
+      "endpoint": "https://YOUR-RESOURCE.openai.azure.com/anthropic",
+      "apiKey": "your-key-here",
+      "models": [{ "id": "claude-opus-4-6", "description": "Claude Opus 4-6" }]
+    }
+  }
+}
+```
+
 ## Environment Variables
 
 Environment variables override config file values:

@@ -1,6 +1,7 @@
 import { loadConfig } from '../config/index.js';
 import { AzureFoundryProvider } from '../providers/azureFoundry.js';
 import { AzureAgentsProvider } from '../providers/azureAgents.js';
+import { AzureAnthropicProvider } from '../providers/azureAnthropic.js';
 import type { Provider } from '../providers/provider.js';
 import { ConfigError } from '../util/errors.js';
 
@@ -33,9 +34,19 @@ export async function resolveProvider(globals: Record<string, unknown>): Promise
       return new AzureAgentsProvider(agentsConfig);
     }
 
+    case 'azure-anthropic': {
+      const anthropicConfig = config.providers.azureAnthropic;
+      if (!anthropicConfig) {
+        throw new ConfigError(
+          'Azure Anthropic provider is not configured. Add providers.azureAnthropic to config.',
+        );
+      }
+      return new AzureAnthropicProvider(anthropicConfig);
+    }
+
     default:
       throw new ConfigError(
-        `Unknown provider "${providerName}". Available providers: azure-foundry, azure-agents`,
+        `Unknown provider "${providerName}". Available providers: azure-foundry, azure-agents, azure-anthropic`,
       );
   }
 }

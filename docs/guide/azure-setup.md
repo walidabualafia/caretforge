@@ -136,6 +136,49 @@ caretforge run "Hello" --provider azure-agents
 
 This uses the Azure AI Agent Service API (threads/runs) and supports Azure CLI authentication. See the [Configuration](/getting-started/configuration) page for the `azureAgents` provider fields.
 
+## Anthropic Models (Claude) on Azure
+
+If you have Anthropic models deployed on Azure (like Claude Opus), these use a different API format. CaretForge includes the `azure-anthropic` provider specifically for this.
+
+### Finding Your Anthropic Endpoint
+
+Your Anthropic-on-Azure endpoint typically looks like:
+
+```
+https://YOUR-RESOURCE.openai.azure.com/anthropic
+```
+
+Note the `/anthropic` suffix — this is the Anthropic API gateway within your Azure OpenAI resource.
+
+### Configuration
+
+```json
+{
+  "defaultProvider": "azure-anthropic",
+  "providers": {
+    "azureAnthropic": {
+      "endpoint": "https://YOUR-RESOURCE.openai.azure.com/anthropic",
+      "apiKey": "your-azure-api-key",
+      "models": [{ "id": "claude-opus-4-6", "description": "Claude Opus 4-6" }]
+    }
+  }
+}
+```
+
+### Test It
+
+```bash
+caretforge run "Say hello" --provider azure-anthropic --model claude-opus-4-6
+```
+
+::: tip
+The same Azure API key that works for your OpenAI models works for Anthropic models too — it's the same Azure resource.
+:::
+
+### Streaming & Tool Calling
+
+The `azure-anthropic` provider supports both streaming and tool calling using the Anthropic Messages API format. CaretForge transparently handles the conversion between its internal format and Anthropic's content block format.
+
 ## Troubleshooting
 
 ### "Unknown model" error

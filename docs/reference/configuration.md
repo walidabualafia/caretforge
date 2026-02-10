@@ -21,6 +21,11 @@ Complete reference for the `config.json` file.
       "agentId": "my-agent-id",
       "apiKey": "optional-api-key",
       "apiVersion": "2025-05-15-preview"
+    },
+    "azureAnthropic": {
+      "endpoint": "https://RESOURCE.openai.azure.com/anthropic",
+      "apiKey": "your-api-key",
+      "models": [{ "id": "claude-opus-4-6", "description": "Claude Opus 4-6" }]
     }
   },
   "telemetry": false
@@ -33,7 +38,7 @@ Complete reference for the `config.json` file.
 
 - **Type:** `string`
 - **Default:** `"azure-foundry"`
-- **Values:** `"azure-foundry"`, `"azure-agents"`
+- **Values:** `"azure-foundry"`, `"azure-agents"`, `"azure-anthropic"`
 
 The provider used when `--provider` is not specified on the command line.
 
@@ -77,6 +82,27 @@ For Azure AI Foundry Agent Service (threads/runs API).
 | `agentId`    | `string`       | Yes      | —                      | Agent/assistant ID               |
 | `apiKey`     | `string`       | No       | —                      | API key (or uses Azure CLI auth) |
 | `apiVersion` | `string`       | No       | `"2025-05-15-preview"` | API version parameter            |
+
+## Azure Anthropic Provider
+
+Path: `providers.azureAnthropic`
+
+For Anthropic models (Claude) deployed on Azure AI Foundry. Uses the Anthropic Messages API through Azure's `/anthropic` gateway.
+
+| Field        | Type           | Required | Default        | Description                                   |
+| ------------ | -------------- | -------- | -------------- | --------------------------------------------- |
+| `endpoint`   | `string (URL)` | Yes      | —              | `https://RESOURCE.openai.azure.com/anthropic` |
+| `apiKey`     | `string`       | Yes      | —              | Azure API key                                 |
+| `apiVersion` | `string`       | No       | `"2023-06-01"` | Anthropic API version header                  |
+| `models`     | `array`        | No       | `[]`           | Available models                              |
+
+### URL Construction
+
+```
+{endpoint}/v1/messages
+```
+
+Uses the `x-api-key` header for authentication and `anthropic-version` header for API versioning.
 
 ## Validation
 
