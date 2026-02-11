@@ -1,0 +1,43 @@
+---
+description: Enforce the project contribution workflow — never push directly to main
+alwaysApply: true
+---
+
+# Contribution Workflow
+
+Follow the CONTRIBUTING.md guidelines for every code change. **Never push directly to main.**
+
+## Branch & PR Flow
+
+1. **Create a feature branch** from `main` before making changes:
+   - `fix/<description>` for bug fixes
+   - `enhancement/<description>` for new features
+   - `docs/<description>` for documentation changes
+
+2. **Make focused commits** on the branch with descriptive messages explaining "why".
+
+3. **Run all quality gates** before pushing:
+   ```bash
+   pnpm build && pnpm lint && pnpm format:check && pnpm typecheck && pnpm test
+   ```
+
+4. **Push the branch** and **open a pull request** against `main`:
+   ```bash
+   git push -u origin <branch-name>
+   gh pr create --title "..." --body "..."
+   ```
+
+5. **Merge the PR** using `gh pr merge` with `--delete-branch`. Never use `git push origin main`.
+
+## Commit Messages
+
+- Summarize the "why" in the first line (imperative mood, ~72 chars)
+- Reference issues with `Fixes #N` when applicable
+- Keep each commit focused on a single logical change
+
+## Do Not
+
+- Push commits directly to `main`
+- Force-push to `main`
+- Skip quality gates (build, lint, format, typecheck, test)
+- Create PRs that bundle unrelated changes
