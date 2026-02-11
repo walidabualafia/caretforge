@@ -96,7 +96,9 @@ export const chatCommand = new Command('chat')
             case '/quit':
               console.log('');
               printDim('Goodbye!');
-              return;
+              rl.close();
+              process.exit(0);
+              return; // unreachable, but keeps TS happy
 
             case '/help':
               printHelp();
@@ -190,6 +192,8 @@ export const chatCommand = new Command('chat')
       }
     } finally {
       rl.close();
+      stdin.pause();
+      stdin.unref();
     }
   });
 
