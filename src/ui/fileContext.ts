@@ -94,6 +94,38 @@ export function createFileCompleter(files: string[]): (line: string) => [string[
   };
 }
 
+// ── Interactive file browsing ────────────────────────────────
+
+const MAX_BROWSE_RESULTS = 50;
+
+/**
+ * Check if the input is a bare @-browse query (just "@" or "@prefix"
+ * with no other text). Returns the prefix if so, or null otherwise.
+ */
+export function parseBrowseQuery(input: string): string | null {
+  const match = input.match(/^@([^\s]*)$/);
+  if (!match) return null;
+  return match[1] ?? '';
+}
+
+/**
+ * Find indexed files matching a prefix and return them grouped by
+ * top-level directory for readable display.
+ */
+export function matchFiles(
+  files: string[],
+  prefix: string,
+): { matches: string[]; total: number; truncated: boolean } {
+  const matches = files.filter((f) => f.startsWith(prefix));
+  const total = matches.length;
+  const truncated = total > MAX_BROWSE_RESULTS;
+  return {
+    matches: truncated ? matches.slice(0, MAX_BROWSE_RESULTS) : matches,
+    total,
+    truncated,
+  };
+}
+
 // ── Reference expansion ─────────────────────────────────────
 
 /** A resolved @file reference. */

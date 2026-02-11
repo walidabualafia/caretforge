@@ -10,7 +10,13 @@ import { getLogger } from '../util/logger.js';
 import { formatError } from '../util/errors.js';
 import { PermissionManager } from '../ui/permissions.js';
 import { ensureDisclaimer } from '../ui/disclaimer.js';
-import { indexFiles, createFileCompleter, expandFileReferences } from '../ui/fileContext.js';
+import {
+  indexFiles,
+  createFileCompleter,
+  expandFileReferences,
+  parseBrowseQuery,
+  matchFiles,
+} from '../ui/fileContext.js';
 import {
   printBanner,
   USER_PROMPT,
@@ -149,6 +155,28 @@ export const chatCommand = new Command('chat')
               printError(`Unknown command: ${slashCmd}. Type /help for available commands.`);
               continue;
           }
+        }
+
+        // ── Browse files with bare @ ─────────────────────────
+        const browsePrefix = parseBrowseQuery(trimmed);
+        if (browsePrefix !== null) {
+          const { matches, total, truncated } = matchFiles(fileIndex, browsePrefix);
+          if (matches.length === 0) {
+            printDim(`No files matching @${browsePrefix}`);
+          } else {
+            printDim(
+              browsePrefix
+                ? `Files matching @${browsePrefix} (${total} total):`
+                : `Indexed files (${total} total):`,
+            );
+            for (const f of matches) {
+              console.log(`  ${chalk.cyan('@')}${chalk.dim(f)}`);
+            }
+            if (truncated) {
+              printDim(`  … and ${total - matches.length} more. Narrow with @path/prefix`);
+            }
+          }
+          continue;
         }
 
         // ── Expand @file references ────────────────────────
