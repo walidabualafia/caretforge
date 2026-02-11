@@ -74,6 +74,20 @@ function getEnvOverrides(): Record<string, unknown> {
     };
   }
 
+  // AWS Bedrock env vars
+  const awsRegion = process.env['CARETFORGE_AWS_REGION'] || process.env['AWS_REGION'];
+  const awsAgentArn = process.env['CARETFORGE_AWS_AGENT_ARN'];
+
+  if (awsRegion || awsAgentArn) {
+    overrides['providers'] = {
+      ...((overrides['providers'] as Record<string, unknown>) ?? {}),
+      awsBedrockAgentCore: {
+        ...(awsRegion ? { region: awsRegion } : {}),
+        ...(awsAgentArn ? { agentRuntimeArn: awsAgentArn } : {}),
+      },
+    };
+  }
+
   return overrides;
 }
 
@@ -127,17 +141,17 @@ export async function saveConfig(
   // Strip secrets unless explicitly told to keep them
   const toSave: CaretForgeConfig = !options?.withSecrets
     ? {
-        ...config,
-        providers: {
-          ...config.providers,
-          azureFoundry: config.providers.azureFoundry
-            ? {
-                ...config.providers.azureFoundry,
-                apiKey: undefined,
-              }
-            : undefined,
-        },
-      }
+      ...config,
+      providers: {
+        ...config.providers,
+        azureFoundry: config.providers.azureFoundry
+          ? {
+            ...config.providers.azureFoundry,
+            apiKey: undefined,
+          }
+          : undefined,
+      },
+    }
     : config;
 
   await writeFile(configPath, JSON.stringify(toSave, null, 2) + '\n', 'utf-8');

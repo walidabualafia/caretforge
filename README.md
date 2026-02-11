@@ -169,9 +169,10 @@ CaretForge supports multiple providers through a pluggable interface:
 
 | Provider          | Models                    | Status    |
 | ----------------- | ------------------------- | --------- |
-| `azure-anthropic` | Claude Opus, Sonnet, etc. | **Ready** |
-| `azure-foundry`   | GPT-4o, GPT-4.1, etc.     | **Ready** |
-| `azure-agents`    | Azure AI Agent Service    | Preview   |
+| `azure-anthropic`      | Claude Opus, Sonnet, etc. | **Ready** |
+| `azure-foundry`        | GPT-4o, GPT-4.1, etc.     | **Ready** |
+| `aws-bedrock-agent-core` | Amazon Bedrock Agents     | **Ready** |
+| `azure-agents`         | Azure AI Agent Service    | Preview   |
 
 ### Adding a New Provider
 

@@ -24,6 +24,17 @@ All environment variables are optional and override their corresponding config f
 | `CARETFORGE_AGENT_ID`       | `providers.azureAgents.agentId`  | Agent ID               |
 | `CARETFORGE_AGENT_API_KEY`  | `providers.azureAgents.apiKey`   | API key (optional)     |
 
+## AWS Bedrock Agent Core
+
+| Variable                   | Config Path                                     | Description                       |
+| -------------------------- | ----------------------------------------------- | --------------------------------- |
+| `CARETFORGE_AWS_REGION`    | `providers.awsBedrockAgentCore.region`          | AWS region (e.g. `us-east-1`)     |
+| `CARETFORGE_AWS_AGENT_ARN` | `providers.awsBedrockAgentCore.agentRuntimeArn` | Full ARN of the Agent Alias       |
+| `AWS_REGION`               | `providers.awsBedrockAgentCore.region`          | Fallback for region               |
+| `AWS_ACCESS_KEY_ID`        | N/A (AWS SDK)                                   | Standard AWS Access Key           |
+| `AWS_SECRET_ACCESS_KEY`    | N/A (AWS SDK)                                   | Standard AWS Secret Key           |
+| `AWS_PROFILE`              | N/A (AWS SDK)                                   | AWS profile name                  |
+
 ## Other
 
 | Variable          | Description                                                |
