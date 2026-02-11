@@ -3,9 +3,10 @@ import { createInterface } from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
 import chalk from 'chalk';
 import type { ChatMessage } from '../providers/provider.js';
+import type { Provider } from '../providers/provider.js';
 import { userMessage } from '../core/messages.js';
 import { runAgent, type AgentOptions } from '../core/agent.js';
-import { resolveProvider } from './shared.js';
+import { resolveProvider, resolveAllProviders, type ProviderEntry } from './shared.js';
 import { getLogger } from '../util/logger.js';
 import { formatError } from '../util/errors.js';
 import { PermissionManager } from '../ui/permissions.js';
@@ -37,7 +38,7 @@ export const chatCommand = new Command('chat')
     const accepted = await ensureDisclaimer();
     if (!accepted) process.exit(0);
 
-    const provider = await resolveProvider(globals);
+    let provider: Provider = await resolveProvider(globals);
     const defaultModel = await getDefaultModel(globals, provider.name);
     let model = defaultModel;
     const stream: boolean = globals['stream'] ?? true;
@@ -61,16 +62,15 @@ export const chatCommand = new Command('chat')
     });
 
     // Use debug (not info) so the structured log only appears with --trace.
-    // The banner below is the user-facing startup output and is synchronous.
     log.debug({ provider: provider.name, model, stream }, 'Starting chat session');
     printBanner(provider.name, model);
     printDim(`${fileIndex.length} files indexed · use @filename to add context`);
     console.log('');
 
-    // Fetch available models for /model listing
-    let availableModels: Array<{ id: string; description?: string }> = [];
+    // ── Collect models from ALL configured providers ────────
+    let allProviders: ProviderEntry[] = [];
     try {
-      availableModels = await provider.listModels();
+      allProviders = await resolveAllProviders();
     } catch {
       /* non-critical */
     }
@@ -126,23 +126,46 @@ export const chatCommand = new Command('chat')
               printDim('Conversation cleared.');
               continue;
 
-            case '/model':
+            case '/model': {
               if (arg) {
-                model = arg;
-                printDim(`Model switched to ${model}`);
+                // Try to switch model — look up across all providers
+                const result = findModel(arg, allProviders);
+                if (result) {
+                  model = result.modelId;
+                  if (result.provider.name !== provider.name) {
+                    provider = result.provider;
+                    printDim(`Switched to ${model} (${provider.name})`);
+                  } else {
+                    printDim(`Model switched to ${model}`);
+                  }
+                } else {
+                  // Accept the model ID even if not in the catalog
+                  model = arg;
+                  printDim(`Model switched to ${model} (not found in catalog — using as-is)`);
+                }
               } else {
-                printDim(`Current model: ${model}`);
-                if (availableModels.length > 0) {
-                  printDim('Available models:');
-                  for (const m of availableModels) {
-                    const active = m.id === model ? ' (active)' : '';
-                    const desc = m.description ? ` — ${m.description}` : '';
-                    printDim(`  • ${m.id}${desc}${active}`);
+                // Display all models grouped by provider
+                printDim(`Current: ${model}  (${provider.name})`);
+                if (allProviders.length > 0) {
+                  for (const entry of allProviders) {
+                    if (entry.models.length === 0) continue;
+                    printDim(`  ${chalk.bold(entry.name)}:`);
+                    for (const m of entry.models) {
+                      const active =
+                        m.id === model && entry.name === provider.name
+                          ? chalk.green(' (active)')
+                          : '';
+                      const desc = m.description ? chalk.dim(` — ${m.description}`) : '';
+                      printDim(`    • ${m.id}${desc}${active}`);
+                    }
                   }
                   printDim('Switch with: /model <id>');
+                } else {
+                  printDim('No models found across configured providers.');
                 }
               }
               continue;
+            }
 
             case '/compact':
               if (history.length > 4) {
@@ -235,6 +258,35 @@ export const chatCommand = new Command('chat')
       stdin.unref();
     }
   });
+
+/**
+ * Look up a model ID across all providers. If the ID contains a slash
+ * (e.g. "azure-foundry/gpt-4.1"), match by provider name and model.
+ * Otherwise, search all providers for a matching model ID.
+ */
+function findModel(
+  query: string,
+  providers: ProviderEntry[],
+): { modelId: string; provider: Provider } | null {
+  // Explicit provider/model syntax
+  if (query.includes('/')) {
+    const [provName, ...rest] = query.split('/');
+    const modelId = rest.join('/');
+    const entry = providers.find((p) => p.name === provName);
+    if (entry) {
+      const found = entry.models.find((m) => m.id === modelId);
+      if (found) return { modelId: found.id, provider: entry.provider };
+    }
+    return null;
+  }
+
+  // Search by model ID across all providers
+  for (const entry of providers) {
+    const found = entry.models.find((m) => m.id === query);
+    if (found) return { modelId: found.id, provider: entry.provider };
+  }
+  return null;
+}
 
 /**
  * Determine the default model from CLI flags or config.

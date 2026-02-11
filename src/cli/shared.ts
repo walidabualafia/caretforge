@@ -2,7 +2,7 @@ import { loadConfig } from '../config/index.js';
 import { AzureFoundryProvider } from '../providers/azureFoundry.js';
 import { AzureAgentsProvider } from '../providers/azureAgents.js';
 import { AzureAnthropicProvider } from '../providers/azureAnthropic.js';
-import type { Provider } from '../providers/provider.js';
+import type { Provider, ModelInfo } from '../providers/provider.js';
 import { ConfigError } from '../util/errors.js';
 
 /**
@@ -49,4 +49,66 @@ export async function resolveProvider(globals: Record<string, unknown>): Promise
         `Unknown provider "${providerName}". Available providers: azure-foundry, azure-agents, azure-anthropic`,
       );
   }
+}
+
+/** A provider instance paired with its models. */
+export interface ProviderEntry {
+  name: string;
+  provider: Provider;
+  models: ModelInfo[];
+}
+
+/**
+ * Instantiate every configured provider and collect their models.
+ * Providers that fail to initialise or list models are silently skipped.
+ */
+export async function resolveAllProviders(): Promise<ProviderEntry[]> {
+  const config = await loadConfig();
+  const entries: ProviderEntry[] = [];
+
+  // Map config keys → provider name + factory
+  const factories: Array<{
+    key: keyof typeof config.providers;
+    name: string;
+    create: () => Provider;
+  }> = [];
+
+  if (config.providers.azureAnthropic) {
+    const cfg = config.providers.azureAnthropic;
+    factories.push({
+      key: 'azureAnthropic',
+      name: 'azure-anthropic',
+      create: () => new AzureAnthropicProvider(cfg),
+    });
+  }
+
+  if (config.providers.azureFoundry) {
+    const cfg = config.providers.azureFoundry;
+    factories.push({
+      key: 'azureFoundry',
+      name: 'azure-foundry',
+      create: () => new AzureFoundryProvider(cfg),
+    });
+  }
+
+  if (config.providers.azureAgents) {
+    const cfg = config.providers.azureAgents;
+    factories.push({
+      key: 'azureAgents',
+      name: 'azure-agents',
+      create: () => new AzureAgentsProvider(cfg),
+    });
+  }
+
+  for (const f of factories) {
+    try {
+      const provider = f.create();
+      const models = await provider.listModels();
+      entries.push({ name: f.name, provider, models });
+    } catch {
+      // Provider misconfigured or listModels failed — skip silently
+    }
+  }
+
+  return entries;
 }
