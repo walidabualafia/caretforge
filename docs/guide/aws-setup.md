@@ -24,23 +24,14 @@ arn:aws:bedrock:us-east-1:123456789012:agent-alias/AGENT_ID/ALIAS_ID
 
 ## Step 2: Configure Credentials
 
-CaretForge supports several ways to authenticate with AWS:
+CaretForge uses the standard AWS SDK credential chain. You can authenticate using any of the following methods:
 
-### Option A: Environment Variables (Static)
-
-```bash
-export AWS_ACCESS_KEY_ID="your-access-key"
-export AWS_SECRET_ACCESS_KEY="your-secret-key"
-export AWS_REGION="us-east-1"
-```
-
-### Option B: AWS Profile
-
-If you use `aws configure`, you can point CaretForge to a specific profile:
-
-```bash
-export AWS_PROFILE="my-profile"
-```
+| Method | Configuration |
+| :--- | :--- |
+| **Access Key + Secret** | Direct credentials via config or env vars (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`) |
+| **AWS CLI Profile** | Use `aws configure` or SSO, then set the `profile` field in config |
+| **IAM Role** | Automatic via Instance Profile or Assumed Role (e.g. on EC2/ECS) |
+| **Environment** | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN` |
 
 ## Step 3: Configure CaretForge
 
