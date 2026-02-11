@@ -60,7 +60,9 @@ export const chatCommand = new Command('chat')
       readline: rl,
     });
 
-    log.info({ provider: provider.name, model, stream }, 'Starting chat session');
+    // Use debug (not info) so the structured log only appears with --trace.
+    // The banner below is the user-facing startup output and is synchronous.
+    log.debug({ provider: provider.name, model, stream }, 'Starting chat session');
     printBanner(provider.name, model);
     printDim(`${fileIndex.length} files indexed · use @filename to add context`);
     console.log('');
