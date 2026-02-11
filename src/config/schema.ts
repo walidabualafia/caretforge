@@ -38,11 +38,22 @@ export const azureAnthropicConfigSchema = z.object({
   models: z.array(modelSchema).default([]),
 });
 
+// ── AWS Bedrock Agent Core provider config ────────────────────
+export const awsBedrockAgentCoreConfigSchema = z.object({
+  region: z.string().min(1, 'Region is required'),
+  agentRuntimeArn: z.string().min(1, 'Agent Runtime ARN is required'), // e.g. arn:aws:bedrock:us-east-1:123456789012:agent-alias/AGENT_ID/ALIAS_ID
+  accessKeyId: z.string().optional(),
+  secretAccessKey: z.string().optional(),
+  sessionToken: z.string().optional(),
+  profile: z.string().optional(),
+});
+
 // ── Top-level providers map ───────────────────────────────────
 export const providersSchema = z.object({
   azureFoundry: azureFoundryConfigSchema.optional(),
   azureAgents: azureAgentsConfigSchema.optional(),
   azureAnthropic: azureAnthropicConfigSchema.optional(),
+  awsBedrockAgentCore: awsBedrockAgentCoreConfigSchema.optional(),
 });
 
 // ── Root config ───────────────────────────────────────────────
@@ -57,5 +68,6 @@ export type CaretForgeConfig = z.infer<typeof configSchema>;
 export type AzureFoundryConfig = z.infer<typeof azureFoundryConfigSchema>;
 export type AzureAgentsConfig = z.infer<typeof azureAgentsConfigSchema>;
 export type AzureAnthropicConfig = z.infer<typeof azureAnthropicConfigSchema>;
+export type AwsBedrockAgentCoreConfig = z.infer<typeof awsBedrockAgentCoreConfigSchema>;
 export type ModelConfig = z.infer<typeof modelSchema>;
 export type ProvidersConfig = z.infer<typeof providersSchema>;

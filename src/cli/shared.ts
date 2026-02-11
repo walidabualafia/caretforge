@@ -2,6 +2,7 @@ import { loadConfig } from '../config/index.js';
 import { AzureFoundryProvider } from '../providers/azureFoundry.js';
 import { AzureAgentsProvider } from '../providers/azureAgents.js';
 import { AzureAnthropicProvider } from '../providers/azureAnthropic.js';
+import { AwsBedrockAgentCoreProvider } from '../providers/awsBedrockAgentCore.js';
 import type { Provider } from '../providers/provider.js';
 import { ConfigError } from '../util/errors.js';
 
@@ -44,9 +45,19 @@ export async function resolveProvider(globals: Record<string, unknown>): Promise
       return new AzureAnthropicProvider(anthropicConfig);
     }
 
+    case 'aws-bedrock-agent-core': {
+      const agentConfig = config.providers.awsBedrockAgentCore;
+      if (!agentConfig) {
+        throw new ConfigError(
+          'AWS Bedrock Agent Core provider is not configured. Add providers.awsBedrockAgentCore to config.',
+        );
+      }
+      return new AwsBedrockAgentCoreProvider(agentConfig);
+    }
+
     default:
       throw new ConfigError(
-        `Unknown provider "${providerName}". Available providers: azure-foundry, azure-agents, azure-anthropic`,
+        `Unknown provider "${providerName}". Available providers: azure-foundry, azure-agents, azure-anthropic, aws-bedrock-agent-core`,
       );
   }
 }
