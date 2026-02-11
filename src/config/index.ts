@@ -150,6 +150,14 @@ export async function saveConfig(
             apiKey: undefined,
           }
           : undefined,
+        awsBedrockAgentCore: config.providers.awsBedrockAgentCore
+          ? {
+            ...config.providers.awsBedrockAgentCore,
+            accessKeyId: undefined,
+            secretAccessKey: undefined,
+            sessionToken: undefined,
+          }
+          : undefined,
       },
     }
     : config;
@@ -182,6 +190,10 @@ export async function initConfig(options?: { withSecrets?: boolean }): Promise<s
         models: [{ id: 'gpt-4o', description: 'GPT-4o on Azure AI Foundry' }],
         chatCompletionPath: '/chat/completions',
         apiVersion: '2024-08-01-preview',
+      },
+      awsBedrockAgentCore: {
+        region: 'us-east-1',
+        agentRuntimeArn: 'arn:aws:bedrock:REGION:ACCOUNT:agent-alias/AGENT_ID/ALIAS_ID',
       },
     },
     telemetry: false,
