@@ -13,6 +13,7 @@ import type {
 } from './provider.js';
 import { ProviderError } from '../util/errors.js';
 import { getLogger } from '../util/logger.js';
+import { createHash } from 'node:crypto';
 
 // ── Config ────────────────────────────────────────────────────
 
@@ -34,9 +35,11 @@ export class AwsBedrockAgentCoreProvider implements Provider {
     private readonly client: BedrockAgentRuntimeClient;
     private readonly agentId: string;
     private readonly agentAliasId: string;
+    private readonly config: AwsBedrockAgentCoreConfig;
     private readonly log = getLogger();
 
     constructor(config: AwsBedrockAgentCoreConfig) {
+        this.config = config;
         // ARN: arn:aws:bedrock:region:account-id:agent-alias/agent-id/alias-id
         const parts = config.agentRuntimeArn.split('/');
         if (parts.length < 3) {
@@ -68,7 +71,7 @@ export class AwsBedrockAgentCoreProvider implements Provider {
     async listModels(): Promise<ModelInfo[]> {
         return [
             {
-                id: this.agentId,
+                id: this.config.agentRuntimeArn, // User requested full ARN
                 description: `AWS Bedrock Agent (${this.agentAliasId})`,
             },
         ];
@@ -169,8 +172,10 @@ export class AwsBedrockAgentCoreProvider implements Provider {
             throw new ProviderError('History must end with a user message for Agents.');
         }
 
-        // Generate a new session ID for each request
-        const sessionId = `session-${Date.now()}`;
+        // Generate a session ID: hash(ARN + timestamp) to fit AWS requirements
+        // AWS Bedrock Agent SessionID must be alphanumeric, 2-100 chars
+        const rawId = `${this.config.agentRuntimeArn}-${Date.now()}`;
+        const sessionId = createHash('sha256').update(rawId).digest('hex').substring(0, 32);
 
         return {
             inputText: lastMsg.content,

@@ -4,6 +4,7 @@ import {
     AwsBedrockAgentCoreConfig,
 } from '../src/providers/awsBedrockAgentCore.js';
 import { BedrockAgentRuntimeClient, InvokeAgentCommand } from '@aws-sdk/client-bedrock-agent-runtime';
+import { createHash } from 'node:crypto';
 
 // ── Mocks ─────────────────────────────────────────────────────
 vi.mock('@aws-sdk/client-bedrock-agent-runtime', () => {
@@ -35,8 +36,11 @@ describe('AwsBedrockAgentCoreProvider', () => {
         provider = new AwsBedrockAgentCoreProvider(mockConfig);
         mockClient = (BedrockAgentRuntimeClient as any).mock.instances[0];
     });
-    it('has the correct provider name', () => {
-        expect(provider.name).toBe('aws-bedrock-agent-core');
+    it('listModels returns the full Agent Runtime ARN', async () => {
+        const models = await provider.listModels();
+        expect(models).toHaveLength(1);
+        expect(models[0].id).toBe(mockConfig.agentRuntimeArn);
+        expect(models[0].description).toBe('AWS Bedrock Agent (ALIAS_ID)');
     });
     it('initializes the client with correct config', () => {
         expect(BedrockAgentRuntimeClient).toHaveBeenCalledWith(
@@ -66,12 +70,15 @@ describe('AwsBedrockAgentCoreProvider', () => {
 
         expect(mockClient.send).toHaveBeenCalled();
         const commandCall = (InvokeAgentCommand as any).mock.calls[0][0];
-        expect(commandCall).toEqual({
+
+        // Verify sessionId is a 32-char hex string (SHA-256 substring)
+        expect(commandCall.sessionId).toMatch(/^[a-f0-9]{32}$/);
+
+        expect(commandCall).toEqual(expect.objectContaining({
             agentId: 'AGENT_ID',
             agentAliasId: 'ALIAS_ID',
-            sessionId: expect.stringMatching(/^session-\d+$/),
             inputText: 'Hello',
-        });
+        }));
 
         expect(result.message.content).toBe('Hello from Agent');
         expect(result.finishReason).toBe('stop');
