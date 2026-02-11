@@ -1,50 +1,23 @@
 /**
- * First-launch disclaimer — prompts the user to accept that CaretForge
+ * Session disclaimer — prompts the user to accept that CaretForge
  * can read, write, and execute in their working directory.
- * Acceptance is persisted so the prompt only appears once.
+ * Displayed every time a session starts (never cached).
  */
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
 import chalk from 'chalk';
-import { getConfigDir } from '../config/paths.js';
-
-const ACCEPTANCE_FILE = '.accepted-terms';
-
-function getAcceptancePath(): string {
-  return join(getConfigDir(), ACCEPTANCE_FILE);
-}
-
-/**
- * Returns true if the user has previously accepted the disclaimer.
- */
-export function hasAcceptedDisclaimer(): boolean {
-  return existsSync(getAcceptancePath());
-}
-
-/**
- * Persist that the user accepted the disclaimer.
- */
-function saveAcceptance(): void {
-  const dir = getConfigDir();
-  mkdirSync(dir, { recursive: true });
-  writeFileSync(getAcceptancePath(), new Date().toISOString(), 'utf-8');
-}
 
 /**
  * Show the disclaimer and prompt the user to accept.
  * Returns true if accepted, false if declined.
- * If already accepted previously, returns true immediately.
+ * This runs every session — acceptance is never persisted.
  */
 export async function ensureDisclaimer(): Promise<boolean> {
-  if (hasAcceptedDisclaimer()) return true;
-
   // Non-TTY (piped) — can't prompt, refuse
   if (!process.stdin.isTTY) {
     console.error(
       chalk.red(
-        'CaretForge requires an interactive terminal for first-launch acceptance. Run it directly.',
+        'CaretForge requires an interactive terminal to accept the disclaimer. Run it directly.',
       ),
     );
     return false;
@@ -78,7 +51,6 @@ export async function ensureDisclaimer(): Promise<boolean> {
     const normalised = answer.trim().toLowerCase();
 
     if (normalised === 'y' || normalised === 'yes' || normalised === '') {
-      saveAcceptance();
       console.log('');
       return true;
     }

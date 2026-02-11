@@ -21,8 +21,7 @@ On first run, CaretForge displays a disclaimer explaining what it can do:
 ```
 
 - You must explicitly accept to continue
-- Acceptance is saved to `~/.config/caretforge/.accepted-terms`
-- The prompt only appears once per machine
+- The prompt appears **every time** you start a session — acceptance is never cached
 - Non-TTY environments (piped input) cannot accept and will exit
 
 ## Secret Handling

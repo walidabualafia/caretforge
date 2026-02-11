@@ -240,7 +240,7 @@ CLI flags  >  Environment variables  >  Config file  >  Defaults
 
 ## Security
 
-- **First-launch disclaimer.** On first run, CaretForge displays a disclaimer explaining what it can do and asks for explicit acceptance. This is persisted so you only see it once.
+- **Session disclaimer.** Every time you start CaretForge, a disclaimer is displayed and you must accept before proceeding. Acceptance is never cached to disk.
 - **Permission prompts by default.** Write and shell tools require explicit user approval per action (or `--allow-write` / `--allow-shell` to auto-approve).
 - **Secrets are never printed in full.** The `config show` command and logs use redaction (first 4, last 2 characters).
 - **`config init` does not write API keys** unless you pass `--with-secrets`.
