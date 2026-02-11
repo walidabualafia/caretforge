@@ -86,6 +86,15 @@ export const chatCommand = new Command('chat')
 
         if (!trimmed) continue;
 
+        // ── Exit keywords (with or without slash) ───────────
+        const lower = trimmed.toLowerCase();
+        if (lower === 'exit' || lower === 'quit' || lower === 'q') {
+          console.log('');
+          printDim('Goodbye!');
+          rl.close();
+          process.exit(0);
+        }
+
         // ── Slash commands ──────────────────────────────────
         if (trimmed.startsWith('/')) {
           const [slashCmd, ...rest] = trimmed.split(/\s+/);
