@@ -1,8 +1,8 @@
 import { loadConfig } from '../config/index.js';
 import { AzureFoundryProvider } from '../providers/azureFoundry.js';
+import { AwsBedrockAgentCoreProvider } from '../providers/awsBedrockAgentCore.js';
 import { AzureAgentsProvider } from '../providers/azureAgents.js';
 import { AzureAnthropicProvider } from '../providers/azureAnthropic.js';
-import { AwsBedrockAgentCoreProvider } from '../providers/awsBedrockAgentCore.js';
 import type { Provider } from '../providers/provider.js';
 import { ConfigError } from '../util/errors.js';
 
