@@ -2,6 +2,7 @@ import { loadConfig } from '../config/index.js';
 import { AzureFoundryProvider } from '../providers/azureFoundry.js';
 import { AzureAgentsProvider } from '../providers/azureAgents.js';
 import { AzureAnthropicProvider } from '../providers/azureAnthropic.js';
+import { AzureResponsesProvider } from '../providers/azureResponses.js';
 import type { Provider, ModelInfo } from '../providers/provider.js';
 import { ConfigError } from '../util/errors.js';
 
@@ -44,9 +45,19 @@ export async function resolveProvider(globals: Record<string, unknown>): Promise
       return new AzureAnthropicProvider(anthropicConfig);
     }
 
+    case 'azure-responses': {
+      const responsesConfig = config.providers.azureResponses;
+      if (!responsesConfig) {
+        throw new ConfigError(
+          'Azure Responses provider is not configured. Add providers.azureResponses to config.',
+        );
+      }
+      return new AzureResponsesProvider(responsesConfig);
+    }
+
     default:
       throw new ConfigError(
-        `Unknown provider "${providerName}". Available providers: azure-foundry, azure-agents, azure-anthropic`,
+        `Unknown provider "${providerName}". Available providers: azure-foundry, azure-agents, azure-anthropic, azure-responses`,
       );
   }
 }
@@ -97,6 +108,15 @@ export async function resolveAllProviders(): Promise<ProviderEntry[]> {
       key: 'azureAgents',
       name: 'azure-agents',
       create: () => new AzureAgentsProvider(cfg),
+    });
+  }
+
+  if (config.providers.azureResponses) {
+    const cfg = config.providers.azureResponses;
+    factories.push({
+      key: 'azureResponses',
+      name: 'azure-responses',
+      create: () => new AzureResponsesProvider(cfg),
     });
   }
 
