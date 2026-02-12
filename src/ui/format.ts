@@ -94,6 +94,22 @@ export function formatPermissionPrompt(): string {
   return `  ${chalk.dim('Allow?')} [${chalk.green('y')}]${chalk.dim('es')} / [${chalk.red('n')}]${chalk.dim('o')} / [${chalk.cyan('a')}]${chalk.dim('lways')} `;
 }
 
+// ── Safety warnings ─────────────────────────────────────────
+
+export function formatBlockedWarning(target: string, reason: string): string {
+  return [
+    '',
+    `  ${chalk.bold.bgRed.white(' BLOCKED ')} ${chalk.red(reason)}`,
+    `  ${chalk.dim(target)}`,
+    `  ${chalk.dim('This action has been denied by the safety layer.')}`,
+    '',
+  ].join('\n');
+}
+
+export function formatDestructiveWarning(reason: string): string {
+  return `  ${chalk.bold.red('⚠ DESTRUCTIVE')} ${chalk.red(reason)} ${chalk.dim('— "always" not available for this action')}`;
+}
+
 // ── Slash command help ───────────────────────────────────────
 
 export function printHelp(): void {
