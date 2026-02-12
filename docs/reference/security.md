@@ -76,12 +76,12 @@ Without any flags, the agent can only **read files**. It cannot:
 
 Before any shell command or file write is executed, CaretForge classifies it into a risk tier:
 
-| Risk Level      | Behavior                                                     |
-| --------------- | ------------------------------------------------------------ |
-| **Safe**        | Auto-approved with `--allow-shell`; normal prompt otherwise  |
-| **Mutating**    | Normal permission prompt                                      |
+| Risk Level      | Behavior                                                          |
+| --------------- | ----------------------------------------------------------------- |
+| **Safe**        | Auto-approved with `--allow-shell`; normal prompt otherwise       |
+| **Mutating**    | Normal permission prompt                                          |
 | **Destructive** | Always prompts, even with `--allow-shell`, shown with red warning |
-| **Blocked**     | Denied outright — never executed                              |
+| **Blocked**     | Denied outright — never executed                                  |
 
 #### Safe Commands
 
@@ -198,12 +198,12 @@ On startup, indexing statistics are shown:
 
 ### Indexing Limits
 
-| Limit         | Value  |
-| ------------- | ------ |
-| Max files     | 5,000  |
-| Max depth     | 4      |
-| Max file size | 1 MB   |
-| Timeout       | 10 s   |
+| Limit         | Value |
+| ------------- | ----- |
+| Max files     | 5,000 |
+| Max depth     | 4     |
+| Max file size | 1 MB  |
+| Timeout       | 10 s  |
 
 ## Agent Loop Limits
 

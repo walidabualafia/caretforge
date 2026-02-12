@@ -60,15 +60,15 @@ caretforge --provider azure-foundry --allow-write
 
 **Slash commands** available inside the REPL:
 
-| Command       | Description                                     |
-| ------------- | ----------------------------------------------- |
-| `/help`       | Show available commands                          |
-| `/model`      | List models from all configured providers        |
-| `/model <id>` | Switch model mid-conversation                    |
-| `/clear`      | Clear conversation history                       |
-| `/compact`    | Trim older messages from history                 |
-| `/exit`       | Exit CaretForge                                  |
-| `/quit`       | Exit CaretForge (alias)                          |
+| Command       | Description                               |
+| ------------- | ----------------------------------------- |
+| `/help`       | Show available commands                   |
+| `/model`      | List models from all configured providers |
+| `/model <id>` | Switch model mid-conversation             |
+| `/clear`      | Clear conversation history                |
+| `/compact`    | Trim older messages from history          |
+| `/exit`       | Exit CaretForge                           |
+| `/quit`       | Exit CaretForge (alias)                   |
 
 You can also type `exit`, `quit`, or `q` without the slash to leave the REPL.
 
