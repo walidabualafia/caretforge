@@ -318,6 +318,8 @@ async function getDefaultModel(
       return 'claude-opus-4-6';
     case 'azure-foundry':
       return 'gpt-4.1';
+    case 'azure-responses':
+      return 'gpt-5.2-codex';
     default:
       return 'gpt-4o';
   }

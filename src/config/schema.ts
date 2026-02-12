@@ -38,11 +38,19 @@ export const azureAnthropicConfigSchema = z.object({
   models: z.array(modelSchema).default([]),
 });
 
+// ── Azure Responses API provider config ──────────────────────
+export const azureResponsesConfigSchema = z.object({
+  endpoint: z.string().url('Must be a valid URL, e.g. https://RESOURCE.openai.azure.com'),
+  apiKey: z.string().min(1, 'API key is required'),
+  models: z.array(modelSchema).default([]),
+});
+
 // ── Top-level providers map ───────────────────────────────────
 export const providersSchema = z.object({
   azureFoundry: azureFoundryConfigSchema.optional(),
   azureAgents: azureAgentsConfigSchema.optional(),
   azureAnthropic: azureAnthropicConfigSchema.optional(),
+  azureResponses: azureResponsesConfigSchema.optional(),
 });
 
 // ── Root config ───────────────────────────────────────────────
@@ -57,5 +65,6 @@ export type CaretForgeConfig = z.infer<typeof configSchema>;
 export type AzureFoundryConfig = z.infer<typeof azureFoundryConfigSchema>;
 export type AzureAgentsConfig = z.infer<typeof azureAgentsConfigSchema>;
 export type AzureAnthropicConfig = z.infer<typeof azureAnthropicConfigSchema>;
+export type AzureResponsesConfig = z.infer<typeof azureResponsesConfigSchema>;
 export type ModelConfig = z.infer<typeof modelSchema>;
 export type ProvidersConfig = z.infer<typeof providersSchema>;
