@@ -73,12 +73,12 @@ CaretForge uses an interactive permission model inspired by [Claude Code](https:
 
 Before any shell command is executed (even with `--allow-shell`), CaretForge classifies it into a risk tier:
 
-| Risk Level     | Behavior                                                   | Examples                                        |
-| -------------- | ---------------------------------------------------------- | ----------------------------------------------- |
-| **Safe**       | Auto-approved with `--allow-shell`; normal prompt otherwise | `ls`, `cat`, `grep`, `git status`, `node -v`   |
-| **Mutating**   | Normal permission prompt                                    | `npm install`, `git commit`, `mkdir`            |
-| **Destructive** | Always prompts (even with `--allow-shell`), shown in red   | `rm`, `sudo`, `chmod -R`, `kill -9`, `shutdown` |
-| **Blocked**    | Denied outright — never executed                            | `rm -rf /`, fork bombs, `curl ... \| bash`       |
+| Risk Level      | Behavior                                                    | Examples                                        |
+| --------------- | ----------------------------------------------------------- | ----------------------------------------------- |
+| **Safe**        | Auto-approved with `--allow-shell`; normal prompt otherwise | `ls`, `cat`, `grep`, `git status`, `node -v`    |
+| **Mutating**    | Normal permission prompt                                    | `npm install`, `git commit`, `mkdir`            |
+| **Destructive** | Always prompts (even with `--allow-shell`), shown in red    | `rm`, `sudo`, `chmod -R`, `kill -9`, `shutdown` |
+| **Blocked**     | Denied outright — never executed                            | `rm -rf /`, fork bombs, `curl ... \| bash`      |
 
 Piped and chained commands (using `|`, `&&`, or `;`) are analyzed segment by segment. If any segment is destructive or blocked, the entire command inherits that classification.
 

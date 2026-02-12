@@ -115,11 +115,11 @@ Path: `providers.azureResponses`
 
 For models that use the OpenAI Responses API instead of Chat Completions (e.g. `gpt-5.2-codex`, `codex-mini`).
 
-| Field      | Type           | Required | Default | Description                                   |
-| ---------- | -------------- | -------- | ------- | --------------------------------------------- |
-| `endpoint` | `string (URL)` | Yes      | —       | `https://RESOURCE.openai.azure.com`           |
-| `apiKey`   | `string`       | Yes      | —       | Azure API key                                 |
-| `models`   | `array`        | No       | `[]`    | Available models                              |
+| Field      | Type           | Required | Default | Description                         |
+| ---------- | -------------- | -------- | ------- | ----------------------------------- |
+| `endpoint` | `string (URL)` | Yes      | —       | `https://RESOURCE.openai.azure.com` |
+| `apiKey`   | `string`       | Yes      | —       | Azure API key                       |
+| `models`   | `array`        | No       | `[]`    | Available models                    |
 
 ### URL Construction
 
