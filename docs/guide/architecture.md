@@ -22,6 +22,8 @@ src/
 ├── providers/          # Model providers
 │   ├── provider.ts     # Provider interface + types
 │   ├── azureFoundry.ts # Azure OpenAI chat completions
+│   ├── azureAnthropic.ts # Azure Anthropic (Claude) provider
+│   ├── azureResponses.ts # Azure OpenAI Responses API (Codex)
 │   └── azureAgents.ts  # Azure AI Agent Service (threads/runs)
 ├── config/             # Configuration
 │   ├── schema.ts       # Zod schemas + types
@@ -33,6 +35,8 @@ src/
 │   ├── writeFile.ts    # Write file (flag-gated)
 │   ├── execShell.ts    # Shell execution (flag-gated)
 │   └── index.ts        # Tool dispatcher
+├── safety/             # Command & path safety
+│   └── commandSafety.ts # Risk-tier classification
 └── util/               # Shared utilities
     ├── logger.ts       # Pino logger
     ├── errors.ts       # Error classes
@@ -52,18 +56,19 @@ User Input
                      │
                      │ tool calls?
                      ▼
-                ┌──────────┐
-                │  Tools   │
-                │ Executor │
-                └──────────┘
+                ┌──────────┐     ┌──────────┐
+                │ Safety   │────▶│  Tools   │
+                │ Analysis │     │ Executor │
+                └──────────┘     └──────────┘
 ```
 
 1. **CLI** parses arguments and resolves the provider
 2. **Agent Loop** manages the conversation, sending messages to the provider
 3. **Provider** makes HTTP calls to the model API
-4. If the model requests **tool calls**, the agent executes them locally
-5. Tool results are fed back to the model, and the loop continues
-6. When the model produces a text-only response, the loop ends
+4. If the model requests **tool calls**, the **Safety Analysis** layer classifies them by risk level
+5. Blocked commands are denied outright; destructive commands always prompt; safe commands may auto-approve
+6. Approved tools are executed and results are fed back to the model
+7. When the model produces a text-only response, the loop ends
 
 ## Key Design Decisions
 
