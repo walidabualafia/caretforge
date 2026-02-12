@@ -8,6 +8,7 @@ docs/.vitepress/cache/
 # IDE
 .vscode/
 .idea/
+.cursor/
 *.swp
 *.swo
 
