@@ -12,11 +12,12 @@ import { formatError } from '../util/errors.js';
 import { PermissionManager } from '../ui/permissions.js';
 import { ensureDisclaimer } from '../ui/disclaimer.js';
 import {
-  indexFiles,
+  indexFilesWithMeta,
   createFileCompleter,
   expandFileReferences,
   parseBrowseQuery,
   matchFiles,
+  formatSize,
 } from '../ui/fileContext.js';
 import {
   printBanner,
@@ -46,7 +47,8 @@ export const chatCommand = new Command('chat')
     // ── Index files for @-completion ────────────────────────
     const cwd = process.cwd();
     printDim('Indexing files...');
-    const fileIndex = await indexFiles(cwd);
+    const indexResult = await indexFilesWithMeta(cwd);
+    const fileIndex = indexResult.files;
     const completer = createFileCompleter(fileIndex);
 
     const rl = createInterface({
@@ -64,7 +66,17 @@ export const chatCommand = new Command('chat')
     // Use debug (not info) so the structured log only appears with --trace.
     log.debug({ provider: provider.name, model, stream }, 'Starting chat session');
     printBanner(provider.name, model);
-    printDim(`${fileIndex.length} files indexed · use @filename to add context`);
+    const indexStats = [
+      `${fileIndex.length} files indexed`,
+      indexResult.skippedBinary > 0 ? `${indexResult.skippedBinary} binary skipped` : '',
+      indexResult.skippedLarge > 0 ? `${indexResult.skippedLarge} large skipped` : '',
+      indexResult.skippedIgnored > 0 ? `${indexResult.skippedIgnored} ignored` : '',
+      indexResult.timedOut ? '(timed out — partial index)' : '',
+      `via ${indexResult.method}`,
+    ]
+      .filter(Boolean)
+      .join(' · ');
+    printDim(`${indexStats} · use @filename to add context`);
     console.log('');
 
     // ── Collect models from ALL configured providers ────────
@@ -195,7 +207,8 @@ export const chatCommand = new Command('chat')
                 : `Indexed files (${total} total):`,
             );
             for (const f of matches) {
-              console.log(`  ${chalk.cyan('@')}${chalk.dim(f)}`);
+              const sizeStr = chalk.dim(` (${formatSize(f.size)})`);
+              console.log(`  ${chalk.cyan('@')}${chalk.dim(f.path)}${sizeStr}`);
             }
             if (truncated) {
               printDim(`  … and ${total - matches.length} more. Narrow with @path/prefix`);
@@ -209,8 +222,11 @@ export const chatCommand = new Command('chat')
         if (refs.length > 0) {
           for (const ref of refs) {
             const lines = ref.content.split('\n').length;
+            const truncNote = ref.truncated
+              ? chalk.yellow(` [truncated from ${formatSize(ref.originalSize)}]`)
+              : '';
             console.log(
-              `  ${chalk.cyan('+')} ${chalk.dim(`${ref.path}`)} ${chalk.dim(`(${lines} lines)`)}`,
+              `  ${chalk.cyan('+')} ${chalk.dim(`${ref.path}`)} ${chalk.dim(`(${lines} lines)`)}${truncNote}`,
             );
           }
         }
