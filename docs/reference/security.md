@@ -72,6 +72,57 @@ Without any flags, the agent can only **read files**. It cannot:
 | `--allow-shell` | `read_file` + `exec_shell` | High       |
 | Both flags      | All three tools            | High       |
 
+### Command Safety Analysis
+
+Before any shell command or file write is executed, CaretForge classifies it into a risk tier:
+
+| Risk Level      | Behavior                                                     |
+| --------------- | ------------------------------------------------------------ |
+| **Safe**        | Auto-approved with `--allow-shell`; normal prompt otherwise  |
+| **Mutating**    | Normal permission prompt                                      |
+| **Destructive** | Always prompts, even with `--allow-shell`, shown with red warning |
+| **Blocked**     | Denied outright — never executed                              |
+
+#### Safe Commands
+
+Read-only commands that cannot modify your system: `ls`, `cat`, `head`, `tail`, `grep`, `find`, `git status`, `git log`, `git diff`, `node -v`, `npm ls`, `pnpm outdated`, `tree`, `stat`, `wc`, and similar.
+
+#### Destructive Commands
+
+Commands that can cause significant damage: `rm`, `dd`, `chmod -R`, `chown -R`, `kill -9`, `killall`, `sudo`, `su`, `shutdown`, `reboot`, `systemctl stop`, `iptables`, and redirecting to absolute paths.
+
+#### Blocked Commands
+
+Outright dangerous patterns that are never allowed:
+
+- `rm -rf /` — recursive deletion at filesystem root
+- `rm -rf ~` — recursive deletion of home directory
+- `rm -rf .` — recursive deletion of current directory
+- Fork bombs (e.g. `:(){ :|:& };:`)
+- `mkfs` — filesystem format
+- `dd of=/dev/...` — direct disk write
+- `curl ... | bash`, `wget ... | sh` — piping remote scripts into shell
+- Truncating system configuration files (`: > /etc/...`)
+
+#### Piped and Chained Commands
+
+Commands using `|`, `&&`, or `;` are split and each segment is analyzed independently. If any segment is destructive or blocked, the entire command inherits that classification.
+
+### Write Path Safety
+
+File write targets are also classified:
+
+**Blocked write paths** (always denied):
+
+- System directories: `/etc/`, `/usr/`, `/bin/`, `/sbin/`, `/boot/`, `/dev/`, `/proc/`, `/sys/`
+- Credential files: `~/.ssh/`, `~/.gnupg/`, `~/.aws/credentials`, `~/.azure/`, `~/.kube/config`
+- Environment secrets: `.env`, `.env.local`
+
+**Destructive write paths** (always prompt):
+
+- Shell configs: `~/.bashrc`, `~/.zshrc`, `~/.profile`, `~/.bash_profile`
+- Tool configs: `~/.gitconfig`, `~/.npmrc`
+
 ### Shell Execution Safety
 
 When `--allow-shell` is enabled:
@@ -80,10 +131,79 @@ When `--allow-shell` is enabled:
 - Both stdout and stderr are captured
 - The exit code is returned to the model
 - Commands run in the current working directory
+- **Safe** commands are auto-approved
+- **Destructive** commands still prompt for approval
 
 ::: danger
 There is no sandboxing. `--allow-shell` gives the model the ability to run any command your user can run. Use it only when you trust the model and the context.
 :::
+
+## File Indexing Governance
+
+The `@` file context system indexes your working directory on startup. To do this safely, CaretForge enforces a 7-point governance model:
+
+### 1. File Size Limits
+
+- **Index cap:** Files larger than **1 MB** are skipped during indexing
+- **Expansion cap:** When you reference a file with `@`, only the first **256 KB** of content is included
+- **Line caps:** Expanded files are limited to **2,000 lines**, and individual lines are truncated at **2,000 characters**
+
+### 2. `.gitignore` Respect
+
+When your working directory is a git repository, CaretForge uses `git ls-files --cached --others --exclude-standard` to discover files. This automatically respects all `.gitignore` rules, ensuring that ignored files (build artifacts, dependencies, etc.) are never indexed.
+
+### 3. Binary File Detection
+
+Only known text file types are indexed. CaretForge maintains a whitelist of 120+ text file extensions (`.js`, `.ts`, `.py`, `.md`, `.json`, `.yaml`, etc.) and known text filenames (`Makefile`, `Dockerfile`, `LICENSE`, etc.). Files that don't match the whitelist are skipped.
+
+### 4. Symlink Safety
+
+- Symbolic links are followed, but **cycle detection** prevents infinite loops (via `realpath` tracking)
+- Special files (FIFOs, sockets, character/block devices) are always skipped
+- Broken symlinks are silently ignored
+
+### 5. Timeout Guard
+
+Indexing is limited to **10 seconds**. If the deadline is reached, indexing stops gracefully and returns whatever files were collected so far. The startup message indicates whether indexing timed out.
+
+### 6. `.caretforgeignore` Support
+
+Create a `.caretforgeignore` file in your project root to exclude additional files from indexing. The format is gitignore-style:
+
+```
+# Comments start with #
+secret.key          # Exact filename
+logs/               # Directory pattern
+*.log               # Glob (files ending in .log)
+dist/               # Path prefix
+```
+
+Patterns in `.caretforgeignore` are applied on top of `.gitignore` rules (both are respected).
+
+### 7. File Size Display
+
+During interactive `@` browsing, file sizes are displayed next to each file name for visibility:
+
+```
+  src/core/agent.ts (5.2 KB)
+  src/cli/chat.ts (3.8 KB)
+  package.json (1.1 KB)
+```
+
+On startup, indexing statistics are shown:
+
+```
+  Indexed 142 files (git) · skipped 3 binary, 1 large, 0 ignored
+```
+
+### Indexing Limits
+
+| Limit         | Value  |
+| ------------- | ------ |
+| Max files     | 5,000  |
+| Max depth     | 4      |
+| Max file size | 1 MB   |
+| Timeout       | 10 s   |
 
 ## Agent Loop Limits
 

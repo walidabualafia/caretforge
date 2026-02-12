@@ -93,6 +93,35 @@ Example:
 }
 ```
 
+### Azure Responses Provider Fields
+
+For models that use the OpenAI Responses API (e.g. `gpt-5.2-codex`, `codex-mini`) instead of Chat Completions.
+
+| Field      | Type     | Default | Description                                       |
+| ---------- | -------- | ------- | ------------------------------------------------- |
+| `endpoint` | `string` | —       | **Required.** `https://RESOURCE.openai.azure.com` |
+| `apiKey`   | `string` | —       | **Required.** Azure API key                       |
+| `models`   | `array`  | `[]`    | List of `{ id, description? }` objects            |
+
+Example:
+
+```json
+{
+  "defaultProvider": "azure-responses",
+  "providers": {
+    "azureResponses": {
+      "endpoint": "https://YOUR-RESOURCE.openai.azure.com",
+      "apiKey": "your-key-here",
+      "models": [{ "id": "gpt-5.2-codex", "description": "GPT-5.2 Codex (Responses API)" }]
+    }
+  }
+}
+```
+
+::: tip
+The same Azure API key works across Chat Completions, Anthropic, and Responses API endpoints on the same resource.
+:::
+
 ## Environment Variables
 
 Environment variables override config file values:

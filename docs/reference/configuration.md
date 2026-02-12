@@ -26,6 +26,11 @@ Complete reference for the `config.json` file.
       "endpoint": "https://RESOURCE.openai.azure.com/anthropic",
       "apiKey": "your-api-key",
       "models": [{ "id": "claude-opus-4-6", "description": "Claude Opus 4-6" }]
+    },
+    "azureResponses": {
+      "endpoint": "https://RESOURCE.openai.azure.com",
+      "apiKey": "your-api-key",
+      "models": [{ "id": "gpt-5.2-codex", "description": "GPT-5.2 Codex" }]
     }
   },
   "telemetry": false
@@ -38,7 +43,7 @@ Complete reference for the `config.json` file.
 
 - **Type:** `string`
 - **Default:** `"azure-foundry"`
-- **Values:** `"azure-foundry"`, `"azure-agents"`, `"azure-anthropic"`
+- **Values:** `"azure-foundry"`, `"azure-agents"`, `"azure-anthropic"`, `"azure-responses"`
 
 The provider used when `--provider` is not specified on the command line.
 
@@ -103,6 +108,26 @@ For Anthropic models (Claude) deployed on Azure AI Foundry. Uses the Anthropic M
 ```
 
 Uses the `x-api-key` header for authentication and `anthropic-version` header for API versioning.
+
+## Azure Responses Provider
+
+Path: `providers.azureResponses`
+
+For models that use the OpenAI Responses API instead of Chat Completions (e.g. `gpt-5.2-codex`, `codex-mini`).
+
+| Field      | Type           | Required | Default | Description                                   |
+| ---------- | -------------- | -------- | ------- | --------------------------------------------- |
+| `endpoint` | `string (URL)` | Yes      | —       | `https://RESOURCE.openai.azure.com`           |
+| `apiKey`   | `string`       | Yes      | —       | Azure API key                                 |
+| `models`   | `array`        | No       | `[]`    | Available models                              |
+
+### URL Construction
+
+```
+{endpoint}/openai/v1/responses
+```
+
+Uses the `api-key` header for authentication. No API version parameter is needed.
 
 ## Validation
 
