@@ -89,8 +89,8 @@ export class PermissionManager {
       return this.promptUser(toolName, args);
     }
 
-    // ── write_file safety analysis ────────────────────────
-    if (toolName === 'write_file') {
+    // ── write_file / edit_file safety analysis ─────────────
+    if (toolName === 'write_file' || toolName === 'edit_file') {
       const filePath = String(args['path'] ?? '');
       const verdict = analyseWritePath(filePath);
 
@@ -142,7 +142,7 @@ export class PermissionManager {
 
       // "always" only available for non-destructive actions
       if (!escalationReason && (normalised === 'a' || normalised === 'always')) {
-        if (toolName === 'write_file') this.state.alwaysWrite = true;
+        if (toolName === 'write_file' || toolName === 'edit_file') this.state.alwaysWrite = true;
         if (toolName === 'exec_shell') this.state.alwaysShell = true;
         return true;
       }

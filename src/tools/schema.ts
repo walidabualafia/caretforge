@@ -48,6 +48,40 @@ export const WRITE_FILE_TOOL: ToolDefinition = {
   },
 };
 
+export const EDIT_FILE_TOOL: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'edit_file',
+    description:
+      'Edit a file by replacing an exact string match with new content. More efficient than write_file for small changes — avoids rewriting the entire file.',
+    parameters: {
+      type: 'object',
+      properties: {
+        path: {
+          type: 'string',
+          description: 'Absolute or relative file path to edit.',
+        },
+        old_string: {
+          type: 'string',
+          description:
+            'The exact text to find in the file. Must match exactly, including whitespace and indentation.',
+        },
+        new_string: {
+          type: 'string',
+          description: 'The text to replace old_string with.',
+        },
+        replace_all: {
+          type: 'boolean',
+          description:
+            'If true, replace all occurrences of old_string. Defaults to false (single replacement).',
+        },
+      },
+      required: ['path', 'old_string', 'new_string'],
+      additionalProperties: false,
+    },
+  },
+};
+
 export const EXEC_SHELL_TOOL: ToolDefinition = {
   type: 'function',
   function: {
@@ -81,7 +115,7 @@ export const EXEC_SHELL_TOOL: ToolDefinition = {
  * permission checking happens at execution time, not at selection time.
  */
 export function getAllTools(): ToolDefinition[] {
-  return [READ_FILE_TOOL, WRITE_FILE_TOOL, EXEC_SHELL_TOOL];
+  return [READ_FILE_TOOL, WRITE_FILE_TOOL, EDIT_FILE_TOOL, EXEC_SHELL_TOOL];
 }
 
 /**

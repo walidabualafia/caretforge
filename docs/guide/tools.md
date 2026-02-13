@@ -27,6 +27,30 @@ When the model wants to write a file, you'll see:
   Allow? [y]es / [n]o / [a]lways
 ```
 
+### `edit_file` — Requires Permission
+
+Performs a surgical, in-place edit on a file by finding and replacing an exact string match. More efficient than `write_file` for small changes — the model doesn't need to re-emit the entire file.
+
+```bash
+caretforge "Fix the typo in README.md"
+```
+
+When the model wants to edit a file, you'll see:
+
+```
+  ⚡ Edit README.md
+  Allow? [y]es / [n]o / [a]lways
+```
+
+Parameters:
+
+- **`path`** — The file to edit
+- **`old_string`** — Exact text to find (must match uniquely)
+- **`new_string`** — Replacement text
+- **`replace_all`** _(optional)_ — If `true`, replace all occurrences instead of requiring a unique match
+
+The tool fails with a clear error if `old_string` is not found or matches multiple locations (unless `replace_all` is set). This prevents accidental edits.
+
 ### `exec_shell` — Requires Permission
 
 Executes a shell command and returns stdout, stderr, and exit code.
@@ -142,6 +166,9 @@ Tool calls are displayed inline during execution:
 
   ▶ Write src/hello.ts
     ✓ Wrote 15 lines to /Users/you/project/src/hello.ts
+
+  ▶ Edit src/utils.ts
+    ✓ Edited src/utils.ts: replaced 1 occurrence (no line count change)
 
   ▶ $ npm test
     ✓ exit 0
