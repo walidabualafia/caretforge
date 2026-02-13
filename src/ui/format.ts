@@ -29,6 +29,8 @@ export function formatToolCallStart(name: string, args: Record<string, unknown>)
       return `  ${chalk.cyan('▶')} ${chalk.bold('Read')} ${chalk.yellow(String(args['path']))}`;
     case 'write_file':
       return `  ${chalk.cyan('▶')} ${chalk.bold('Write')} ${chalk.yellow(String(args['path']))}`;
+    case 'edit_file':
+      return `  ${chalk.cyan('▶')} ${chalk.bold('Edit')} ${chalk.yellow(String(args['path']))}`;
     case 'exec_shell':
       return `  ${chalk.cyan('▶')} ${chalk.bold('$')} ${chalk.dim(String(args['command']))}`;
     default:
@@ -43,6 +45,8 @@ export function formatToolResult(name: string, result: string): string {
       return chalk.dim(`    ${lines} line${lines !== 1 ? 's' : ''}`);
     }
     case 'write_file':
+      return `    ${chalk.green('✓')} ${chalk.dim(result)}`;
+    case 'edit_file':
       return `    ${chalk.green('✓')} ${chalk.dim(result)}`;
     case 'exec_shell': {
       try {
@@ -82,6 +86,8 @@ export function formatPermissionRequest(toolName: string, args: Record<string, u
   let description: string;
   if (toolName === 'write_file') {
     description = `Write to ${chalk.yellow(String(args['path']))}`;
+  } else if (toolName === 'edit_file') {
+    description = `Edit ${chalk.yellow(String(args['path']))}`;
   } else if (toolName === 'exec_shell') {
     description = `Run ${chalk.yellow(String(args['command']))}`;
   } else {

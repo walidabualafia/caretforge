@@ -47,7 +47,7 @@ export interface AgentResult {
 const DEFAULT_MAX_ITERATIONS = 20;
 
 // Tools that require explicit permission
-const DANGEROUS_TOOLS = new Set(['write_file', 'exec_shell']);
+const DANGEROUS_TOOLS = new Set(['write_file', 'edit_file', 'exec_shell']);
 
 // ── Agent loop ────────────────────────────────────────────────
 
