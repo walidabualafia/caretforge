@@ -141,25 +141,25 @@ export async function saveConfig(
   // Strip secrets unless explicitly told to keep them
   const toSave: CaretForgeConfig = !options?.withSecrets
     ? {
-      ...config,
-      providers: {
-        ...config.providers,
-        azureFoundry: config.providers.azureFoundry
-          ? {
-            ...config.providers.azureFoundry,
-            apiKey: undefined,
-          }
-          : undefined,
-        awsBedrockAgentCore: config.providers.awsBedrockAgentCore
-          ? {
-            ...config.providers.awsBedrockAgentCore,
-            accessKeyId: undefined,
-            secretAccessKey: undefined,
-            sessionToken: undefined,
-          }
-          : undefined,
-      },
-    }
+        ...config,
+        providers: {
+          ...config.providers,
+          azureFoundry: config.providers.azureFoundry
+            ? {
+                ...config.providers.azureFoundry,
+                apiKey: undefined,
+              }
+            : undefined,
+          awsBedrockAgentCore: config.providers.awsBedrockAgentCore
+            ? {
+                ...config.providers.awsBedrockAgentCore,
+                accessKeyId: undefined,
+                secretAccessKey: undefined,
+                sessionToken: undefined,
+              }
+            : undefined,
+        },
+      }
     : config;
 
   await writeFile(configPath, JSON.stringify(toSave, null, 2) + '\n', 'utf-8');

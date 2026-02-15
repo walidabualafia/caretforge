@@ -115,18 +115,19 @@ Path: `providers.awsBedrockAgentCore`
 
 For Amazon Bedrock Agents (InvokeAgent API).
 
-| Field             | Type     | Required | Default | Description                                             |
-| ----------------- | -------- | -------- | ------- | ------------------------------------------------------- |
-| `region`          | `string` | Yes      | —       | AWS region (e.g. `us-east-1`)                           |
-| `agentRuntimeArn` | `string` | Yes      | —       | Full ARN of the Agent Alias                             |
-| `accessKeyId`     | `string` | No       | —       | Static AWS Access Key                                   |
-| `secretAccessKey` | `string` | No       | —       | Static AWS Secret Key                                   |
-| `sessionToken`    | `string` | No       | —       | AWS Session Token                                       |
-| `profile`         | `string` | No       | —       | AWS profile name to use from credentials file           |
+| Field             | Type     | Required | Default | Description                                   |
+| ----------------- | -------- | -------- | ------- | --------------------------------------------- |
+| `region`          | `string` | Yes      | —       | AWS region (e.g. `us-east-1`)                 |
+| `agentRuntimeArn` | `string` | Yes      | —       | Full ARN of the Agent Alias                   |
+| `accessKeyId`     | `string` | No       | —       | Static AWS Access Key                         |
+| `secretAccessKey` | `string` | No       | —       | Static AWS Secret Key                         |
+| `sessionToken`    | `string` | No       | —       | AWS Session Token                             |
+| `profile`         | `string` | No       | —       | AWS profile name to use from credentials file |
 
 ### Credentials Resolution
 
 CaretForge follows the standard AWS credential provider chain order:
+
 1. Static credentials in `config.json`
 2. Environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`)
 3. AWS profile specified in `config.json`

@@ -103,7 +103,8 @@ export const doctorCommand = new Command('doctor')
                 : aws.agentRuntimeArn,
           });
 
-          const hasCreds = (!!aws.accessKeyId && !!aws.secretAccessKey) ||
+          const hasCreds =
+            (!!aws.accessKeyId && !!aws.secretAccessKey) ||
             (!!process.env['AWS_ACCESS_KEY_ID'] && !!process.env['AWS_SECRET_ACCESS_KEY']) ||
             !!aws.profile;
 
@@ -111,7 +112,9 @@ export const doctorCommand = new Command('doctor')
             name: 'AWS Credentials',
             status: hasCreds ? 'ok' : 'warn',
             message: hasCreds
-              ? (aws.profile ? `Using profile: ${aws.profile}` : 'Credentials found in config/env.')
+              ? aws.profile
+                ? `Using profile: ${aws.profile}`
+                : 'Credentials found in config/env.'
               : 'No explicit credentials found. Will use default SDK chain.',
           });
         } else {

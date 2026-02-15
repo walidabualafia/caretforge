@@ -26,12 +26,12 @@ arn:aws:bedrock:us-east-1:123456789012:agent-alias/AGENT_ID/ALIAS_ID
 
 CaretForge uses the standard AWS SDK credential chain. You can authenticate using any of the following methods:
 
-| Method | Configuration |
-| :--- | :--- |
+| Method                  | Configuration                                                                            |
+| :---------------------- | :--------------------------------------------------------------------------------------- |
 | **Access Key + Secret** | Direct credentials via config or env vars (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`) |
-| **AWS CLI Profile** | Use `aws configure` or SSO, then set the `profile` field in config |
-| **IAM Role** | Automatic via Instance Profile or Assumed Role (e.g. on EC2/ECS) |
-| **Environment** | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN` |
+| **AWS CLI Profile**     | Use `aws configure` or SSO, then set the `profile` field in config                       |
+| **IAM Role**            | Automatic via Instance Profile or Assumed Role (e.g. on EC2/ECS)                         |
+| **Environment**         | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`                        |
 
 ## Step 3: Configure CaretForge
 
@@ -86,6 +86,7 @@ CaretForge automatically handles session management with Bedrock Agents. Every t
 ## Sig V4 Signing
 
 CaretForge uses the standard AWS SDK for JavaScript (v3) to handle Signature Version 4 (Sig V4) signing. It will automatically look for credentials in:
+
 1. The `config.json` file (`accessKeyId`, `secretAccessKey`)
 2. Environment variables (`AWS_ACCESS_KEY_ID`, etc.)
 3. The specified AWS profile
@@ -94,11 +95,14 @@ CaretForge uses the standard AWS SDK for JavaScript (v3) to handle Signature Ver
 ## Troubleshooting
 
 ### "Invalid Agent Runtime ARN"
+
 - Verify the ARN copied from the AWS console matches the format `arn:aws:bedrock:REGION:ACCOUNT:agent-alias/ID/ALIAS`.
 
 ### Access Denied
+
 - Ensure your IAM user or role has the `bedrock:InvokeAgent` permission for the specific agent resource.
 - Check if the agent is in the `PREPARED` state in the AWS console.
 
 ### Region Mismatch
+
 - Ensure the `region` in your config matches the region where the Bedrock Agent is deployed.

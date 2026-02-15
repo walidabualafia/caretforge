@@ -129,15 +129,15 @@ Example:
 
 Environment variables override config file values:
 
-| Variable                      | Maps to                           |
-| ----------------------------- | --------------------------------- |
-| `CARETFORGE_DEFAULT_PROVIDER` | `defaultProvider`                 |
-| `CARETFORGE_AZURE_ENDPOINT`   | `providers.azureFoundry.endpoint` |
-| `CARETFORGE_AZURE_API_KEY`    | `providers.azureFoundry.apiKey`   |
-| `CARETFORGE_AZURE_AUTH_MODE`  | `providers.azureFoundry.authMode` |
-| `CARETFORGE_AGENT_API_KEY`    | `providers.azureAgents.apiKey`    |
-| `CARETFORGE_AWS_REGION`       | `providers.awsBedrockAgentCore.region` |
-| `CARETFORGE_AWS_AGENT_ARN`    | `providers.awsBedrockAgentCore.agentRuntimeArn` |
+| Variable                      | Maps to                                           |
+| ----------------------------- | ------------------------------------------------- |
+| `CARETFORGE_DEFAULT_PROVIDER` | `defaultProvider`                                 |
+| `CARETFORGE_AZURE_ENDPOINT`   | `providers.azureFoundry.endpoint`                 |
+| `CARETFORGE_AZURE_API_KEY`    | `providers.azureFoundry.apiKey`                   |
+| `CARETFORGE_AZURE_AUTH_MODE`  | `providers.azureFoundry.authMode`                 |
+| `CARETFORGE_AGENT_API_KEY`    | `providers.azureAgents.apiKey`                    |
+| `CARETFORGE_AWS_REGION`       | `providers.awsBedrockAgentCore.region`            |
+| `CARETFORGE_AWS_AGENT_ARN`    | `providers.awsBedrockAgentCore.agentRuntimeArn`   |
 | `AWS_REGION`                  | `providers.awsBedrockAgentCore.region` (Fallback) |
 
 ## Viewing Your Config
