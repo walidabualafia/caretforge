@@ -3,19 +3,21 @@ import { createInterface } from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
 import chalk from 'chalk';
 import type { ChatMessage } from '../providers/provider.js';
+import type { Provider } from '../providers/provider.js';
 import { userMessage } from '../core/messages.js';
 import { runAgent, type AgentOptions } from '../core/agent.js';
-import { resolveProvider } from './shared.js';
+import { resolveProvider, resolveAllProviders, type ProviderEntry } from './shared.js';
 import { getLogger } from '../util/logger.js';
 import { formatError } from '../util/errors.js';
 import { PermissionManager } from '../ui/permissions.js';
 import { ensureDisclaimer } from '../ui/disclaimer.js';
 import {
-  indexFiles,
+  indexFilesWithMeta,
   createFileCompleter,
   expandFileReferences,
   parseBrowseQuery,
   matchFiles,
+  formatSize,
 } from '../ui/fileContext.js';
 import {
   printBanner,
@@ -37,7 +39,7 @@ export const chatCommand = new Command('chat')
     const accepted = await ensureDisclaimer();
     if (!accepted) process.exit(0);
 
-    const provider = await resolveProvider(globals);
+    let provider: Provider = await resolveProvider(globals);
     const defaultModel = await getDefaultModel(globals, provider.name);
     let model = defaultModel;
     const stream: boolean = globals['stream'] ?? true;
@@ -45,7 +47,8 @@ export const chatCommand = new Command('chat')
     // ── Index files for @-completion ────────────────────────
     const cwd = process.cwd();
     printDim('Indexing files...');
-    const fileIndex = await indexFiles(cwd);
+    const indexResult = await indexFilesWithMeta(cwd);
+    const fileIndex = indexResult.files;
     const completer = createFileCompleter(fileIndex);
 
     const rl = createInterface({
@@ -60,15 +63,26 @@ export const chatCommand = new Command('chat')
       readline: rl,
     });
 
-    log.info({ provider: provider.name, model, stream }, 'Starting chat session');
+    // Use debug (not info) so the structured log only appears with --trace.
+    log.debug({ provider: provider.name, model, stream }, 'Starting chat session');
     printBanner(provider.name, model);
-    printDim(`${fileIndex.length} files indexed · use @filename to add context`);
+    const indexStats = [
+      `${fileIndex.length} files indexed`,
+      indexResult.skippedBinary > 0 ? `${indexResult.skippedBinary} binary skipped` : '',
+      indexResult.skippedLarge > 0 ? `${indexResult.skippedLarge} large skipped` : '',
+      indexResult.skippedIgnored > 0 ? `${indexResult.skippedIgnored} ignored` : '',
+      indexResult.timedOut ? '(timed out — partial index)' : '',
+      `via ${indexResult.method}`,
+    ]
+      .filter(Boolean)
+      .join(' · ');
+    printDim(`${indexStats} · use @filename to add context`);
     console.log('');
 
-    // Fetch available models for /model listing
-    let availableModels: Array<{ id: string; description?: string }> = [];
+    // ── Collect models from ALL configured providers ────────
+    let allProviders: ProviderEntry[] = [];
     try {
-      availableModels = await provider.listModels();
+      allProviders = await resolveAllProviders();
     } catch {
       /* non-critical */
     }
@@ -124,23 +138,46 @@ export const chatCommand = new Command('chat')
               printDim('Conversation cleared.');
               continue;
 
-            case '/model':
+            case '/model': {
               if (arg) {
-                model = arg;
-                printDim(`Model switched to ${model}`);
+                // Try to switch model — look up across all providers
+                const result = findModel(arg, allProviders);
+                if (result) {
+                  model = result.modelId;
+                  if (result.provider.name !== provider.name) {
+                    provider = result.provider;
+                    printDim(`Switched to ${model} (${provider.name})`);
+                  } else {
+                    printDim(`Model switched to ${model}`);
+                  }
+                } else {
+                  // Accept the model ID even if not in the catalog
+                  model = arg;
+                  printDim(`Model switched to ${model} (not found in catalog — using as-is)`);
+                }
               } else {
-                printDim(`Current model: ${model}`);
-                if (availableModels.length > 0) {
-                  printDim('Available models:');
-                  for (const m of availableModels) {
-                    const active = m.id === model ? ' (active)' : '';
-                    const desc = m.description ? ` — ${m.description}` : '';
-                    printDim(`  • ${m.id}${desc}${active}`);
+                // Display all models grouped by provider
+                printDim(`Current: ${model}  (${provider.name})`);
+                if (allProviders.length > 0) {
+                  for (const entry of allProviders) {
+                    if (entry.models.length === 0) continue;
+                    printDim(`  ${chalk.bold(entry.name)}:`);
+                    for (const m of entry.models) {
+                      const active =
+                        m.id === model && entry.name === provider.name
+                          ? chalk.green(' (active)')
+                          : '';
+                      const desc = m.description ? chalk.dim(` — ${m.description}`) : '';
+                      printDim(`    • ${m.id}${desc}${active}`);
+                    }
                   }
                   printDim('Switch with: /model <id>');
+                } else {
+                  printDim('No models found across configured providers.');
                 }
               }
               continue;
+            }
 
             case '/compact':
               if (history.length > 4) {
@@ -170,7 +207,8 @@ export const chatCommand = new Command('chat')
                 : `Indexed files (${total} total):`,
             );
             for (const f of matches) {
-              console.log(`  ${chalk.cyan('@')}${chalk.dim(f)}`);
+              const sizeStr = chalk.dim(` (${formatSize(f.size)})`);
+              console.log(`  ${chalk.cyan('@')}${chalk.dim(f.path)}${sizeStr}`);
             }
             if (truncated) {
               printDim(`  … and ${total - matches.length} more. Narrow with @path/prefix`);
@@ -184,8 +222,11 @@ export const chatCommand = new Command('chat')
         if (refs.length > 0) {
           for (const ref of refs) {
             const lines = ref.content.split('\n').length;
+            const truncNote = ref.truncated
+              ? chalk.yellow(` [truncated from ${formatSize(ref.originalSize)}]`)
+              : '';
             console.log(
-              `  ${chalk.cyan('+')} ${chalk.dim(`${ref.path}`)} ${chalk.dim(`(${lines} lines)`)}`,
+              `  ${chalk.cyan('+')} ${chalk.dim(`${ref.path}`)} ${chalk.dim(`(${lines} lines)`)}${truncNote}`,
             );
           }
         }
@@ -235,6 +276,35 @@ export const chatCommand = new Command('chat')
   });
 
 /**
+ * Look up a model ID across all providers. If the ID contains a slash
+ * (e.g. "azure-foundry/gpt-4.1"), match by provider name and model.
+ * Otherwise, search all providers for a matching model ID.
+ */
+function findModel(
+  query: string,
+  providers: ProviderEntry[],
+): { modelId: string; provider: Provider } | null {
+  // Explicit provider/model syntax
+  if (query.includes('/')) {
+    const [provName, ...rest] = query.split('/');
+    const modelId = rest.join('/');
+    const entry = providers.find((p) => p.name === provName);
+    if (entry) {
+      const found = entry.models.find((m) => m.id === modelId);
+      if (found) return { modelId: found.id, provider: entry.provider };
+    }
+    return null;
+  }
+
+  // Search by model ID across all providers
+  for (const entry of providers) {
+    const found = entry.models.find((m) => m.id === query);
+    if (found) return { modelId: found.id, provider: entry.provider };
+  }
+  return null;
+}
+
+/**
  * Determine the default model from CLI flags or config.
  */
 async function getDefaultModel(
@@ -248,6 +318,8 @@ async function getDefaultModel(
       return 'claude-opus-4-6';
     case 'azure-foundry':
       return 'gpt-4.1';
+    case 'azure-responses':
+      return 'gpt-5.2-codex';
     default:
       return 'gpt-4o';
   }

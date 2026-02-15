@@ -60,14 +60,21 @@ caretforge --provider azure-foundry --allow-write
 
 **Slash commands** available inside the REPL:
 
-| Command       | Description                      |
-| ------------- | -------------------------------- |
-| `/help`       | Show available commands          |
-| `/model`      | List available models            |
-| `/model <id>` | Switch model mid-conversation    |
-| `/clear`      | Clear conversation history       |
-| `/compact`    | Trim older messages from history |
-| `/exit`       | Exit CaretForge                  |
+| Command       | Description                               |
+| ------------- | ----------------------------------------- |
+| `/help`       | Show available commands                   |
+| `/model`      | List models from all configured providers |
+| `/model <id>` | Switch model mid-conversation             |
+| `/clear`      | Clear conversation history                |
+| `/compact`    | Trim older messages from history          |
+| `/exit`       | Exit CaretForge                           |
+| `/quit`       | Exit CaretForge (alias)                   |
+
+You can also type `exit`, `quit`, or `q` without the slash to leave the REPL.
+
+::: tip
+The `/model` command (without arguments) in the REPL lists models from **all** configured providers, grouped by provider name. This differs from `caretforge model list` on the command line, which shows only the active provider's models.
+:::
 
 **File context with `@`:**
 
@@ -78,7 +85,13 @@ Reference files directly in your prompts using the `@` prefix. Press Tab after `
 > Compare @package.json with @tsconfig.json
 ```
 
-Files are indexed on startup (up to 5000 files, depth 4), skipping common directories like `node_modules` and `.git`.
+Files are indexed on startup (up to 5,000 files, depth 4) with a comprehensive governance model. On startup you'll see indexing statistics:
+
+```
+  Indexed 142 files (git) · skipped 3 binary, 1 large, 0 ignored
+```
+
+During interactive `@` browsing, file sizes are displayed next to each file name. See the [Security](/reference/security) page for full details on file indexing governance.
 
 ### `caretforge "task"` / `caretforge run [task...]`
 

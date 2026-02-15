@@ -46,7 +46,7 @@ az cognitiveservices account keys list \
 1. In Azure AI Foundry, go to **Deployments**
 2. Note the **Name** column — this is what you'll pass as `--model`
 
-Common deployment names: `gpt-4o`, `gpt-4.1`, `gpt-35-turbo`
+Common deployment names: `gpt-4o`, `gpt-4.1`, `gpt-35-turbo`, `Kimi-K2.5`
 
 You can also list deployments via CLI:
 
@@ -178,6 +178,93 @@ The same Azure API key that works for your OpenAI models works for Anthropic mod
 ### Streaming & Tool Calling
 
 The `azure-anthropic` provider supports both streaming and tool calling using the Anthropic Messages API format. CaretForge transparently handles the conversion between its internal format and Anthropic's content block format.
+
+## Azure OpenAI Responses API (Codex Models)
+
+Some newer Azure OpenAI models — such as `gpt-5.2-codex` and `codex-mini` — use the **Responses API** instead of Chat Completions. CaretForge includes the `azure-responses` provider specifically for these models.
+
+### Why a Separate Provider?
+
+The Responses API is a different endpoint with a distinct request/response format:
+
+- Uses `input` instead of `messages`
+- System prompts go in an `instructions` field
+- Tool calls appear as `function_call` items in the `output` array
+- Streaming events follow a different SSE protocol
+
+### Finding Your Endpoint
+
+The endpoint is your standard Azure OpenAI resource URL (no special suffix):
+
+```
+https://YOUR-RESOURCE.openai.azure.com
+```
+
+### URL Construction
+
+```
+{endpoint}/openai/v1/responses
+```
+
+### Configuration
+
+```json
+{
+  "defaultProvider": "azure-responses",
+  "providers": {
+    "azureResponses": {
+      "endpoint": "https://YOUR-RESOURCE.openai.azure.com",
+      "apiKey": "your-azure-api-key",
+      "models": [{ "id": "gpt-5.2-codex", "description": "GPT-5.2 Codex (Responses API)" }]
+    }
+  }
+}
+```
+
+### Test It
+
+```bash
+caretforge run "Say hello" --provider azure-responses --model gpt-5.2-codex
+```
+
+::: tip
+The same Azure API key works across Chat Completions, Anthropic, and Responses API endpoints on the same Azure resource.
+:::
+
+### Streaming & Tool Calling
+
+The `azure-responses` provider supports both streaming and tool calling. Streaming events use a different protocol from Chat Completions SSE — CaretForge handles this transparently.
+
+## Third-Party Models on Azure AI Foundry
+
+Azure AI Foundry hosts third-party models alongside Microsoft's own. Many of these are compatible with the standard OpenAI chat completions format and can be used with the `azure-foundry` provider.
+
+### Kimi K2.5 (MoonshotAI)
+
+Kimi K2.5 is a reasoning model by MoonshotAI, available through Azure AI Foundry's model catalog. It follows the OpenAI chat completions format, so you can add it to your `azure-foundry` configuration:
+
+```json
+{
+  "providers": {
+    "azureFoundry": {
+      "endpoint": "https://YOUR-RESOURCE.services.ai.azure.com",
+      "apiKey": "your-key",
+      "models": [
+        { "id": "gpt-4.1" },
+        { "id": "Kimi-K2.5", "description": "Kimi K2.5 (MoonshotAI reasoning model)" }
+      ]
+    }
+  }
+}
+```
+
+```bash
+caretforge run "Explain recursion" --model Kimi-K2.5
+```
+
+::: tip
+Kimi K2.5 is a reasoning model — it may include internal chain-of-thought in its responses via `reasoning_content`. CaretForge processes this transparently.
+:::
 
 ## Troubleshooting
 

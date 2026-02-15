@@ -109,11 +109,14 @@ Inside the REPL, you have slash commands:
 | Command       | Description                      |
 | ------------- | -------------------------------- |
 | `/help`       | Show available commands          |
-| `/model`      | List available models            |
+| `/model`      | List models from all providers   |
 | `/model <id>` | Switch model mid-conversation    |
 | `/clear`      | Clear conversation history       |
 | `/compact`    | Trim older messages from history |
 | `/exit`       | Exit CaretForge                  |
+| `/quit`       | Exit CaretForge (alias)          |
+
+You can also type `exit`, `quit`, or `q` without the slash to leave the REPL.
 
 ### File Context with @
 
@@ -124,7 +127,7 @@ Reference files directly in your prompts using the `@` prefix:
 > Compare @package.json and @tsconfig.json
 ```
 
-Tab-completion is supported — press Tab after `@` to see available files. Files in your working directory are indexed on startup (respecting common ignore patterns like `node_modules`, `.git`, etc.).
+Tab-completion is supported — press Tab after `@` to see available files. Files in your working directory are indexed on startup with a comprehensive governance model: `.gitignore` rules are respected (via `git ls-files`), binary files are detected and skipped, symlinks are followed safely, files over 1 MB are excluded, and a 10-second timeout prevents stalls. You can add a `.caretforgeignore` file for custom exclusions. File sizes are shown during interactive browsing.
 
 ### One-Shot Tasks
 
@@ -167,12 +170,13 @@ caretforge run "List all TODO comments" --json
 
 CaretForge supports multiple providers through a pluggable interface:
 
-| Provider                 | Models                    | Status    |
-| ------------------------ | ------------------------- | --------- |
-| `azure-anthropic`        | Claude Opus, Sonnet, etc. | **Ready** |
-| `azure-foundry`          | GPT-4o, GPT-4.1, etc.     | **Ready** |
-| `aws-bedrock-agent-core` | Amazon Bedrock Agents     | **Ready** |
-| `azure-agents`           | Azure AI Agent Service    | Preview   |
+| Provider                 | Models                     | Status    |
+| ------------------------ | -------------------------- | --------- |
+| `azure-anthropic`        | Claude Opus, Sonnet, etc.  | **Ready** |
+| `azure-foundry`          | GPT-4o, GPT-4.1, Kimi K2.5 | **Ready** |
+| `aws-bedrock-agent-core` | Amazon Bedrock Agents      | **Ready** |
+| `azure-responses`        | gpt-5.2-codex, codex-mini  | **Ready** |
+| `azure-agents`           | Azure AI Agent Service     | Preview   |
 
 ### Adding a New Provider
 
@@ -243,6 +247,8 @@ CLI flags  >  Environment variables  >  Config file  >  Defaults
 
 - **Session disclaimer.** Every time you start CaretForge, a disclaimer is displayed and you must accept before proceeding. Acceptance is never cached to disk.
 - **Permission prompts by default.** Write and shell tools require explicit user approval per action (or `--allow-write` / `--allow-shell` to auto-approve).
+- **Command safety analysis.** Shell commands are classified into risk tiers (safe, mutating, destructive, blocked). Destructive commands always prompt — even with `--allow-shell`. Blocked commands (e.g., `rm -rf /`, fork bombs) are denied outright.
+- **File indexing governance.** The `@` file context system respects `.gitignore`, detects binary files, enforces size limits, handles symlinks safely, and supports `.caretforgeignore` for custom exclusions.
 - **Secrets are never printed in full.** The `config show` command and logs use redaction (first 4, last 2 characters).
 - **`config init` does not write API keys** unless you pass `--with-secrets`.
 - **Never commit your config file** with secrets. Use environment variables in CI/CD.
@@ -269,6 +275,7 @@ src/
 │   ├── provider.ts # Provider interface + shared types
 │   ├── azureAnthropic.ts  # Azure Anthropic (Claude) provider
 │   ├── azureFoundry.ts    # Azure OpenAI provider
+│   ├── azureResponses.ts  # Azure OpenAI Responses API provider
 │   └── azureAgents.ts     # Azure AI Agent Service provider
 ├── config/         # Configuration management
 │   ├── schema.ts   # Zod schemas + types
@@ -280,10 +287,12 @@ src/
 │   ├── writeFile.ts# File writing
 │   ├── execShell.ts# Shell execution
 │   └── index.ts    # Tool dispatcher
+├── safety/         # Command & path safety analysis
+│   └── commandSafety.ts # Risk-tier classification
 ├── ui/             # Terminal UI
 │   ├── format.ts   # Colors, tool display, banners
 │   ├── permissions.ts # Interactive permission prompts
-│   ├── disclaimer.ts  # First-launch acceptance prompt
+│   ├── disclaimer.ts  # Session acceptance prompt
 │   └── fileContext.ts # @file indexing, completion, expansion
 └── util/           # Shared utilities
     ├── logger.ts   # Pino logger

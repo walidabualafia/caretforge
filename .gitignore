@@ -9,6 +9,7 @@ pnpm-workspace.yaml
 # IDE
 .vscode/
 .idea/
+.cursor/
 *.swp
 *.swo
 

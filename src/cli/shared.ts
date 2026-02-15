@@ -3,7 +3,8 @@ import { AzureFoundryProvider } from '../providers/azureFoundry.js';
 import { AwsBedrockAgentCoreProvider } from '../providers/awsBedrockAgentCore.js';
 import { AzureAgentsProvider } from '../providers/azureAgents.js';
 import { AzureAnthropicProvider } from '../providers/azureAnthropic.js';
-import type { Provider } from '../providers/provider.js';
+import { AzureResponsesProvider } from '../providers/azureResponses.js';
+import type { Provider, ModelInfo } from '../providers/provider.js';
 import { ConfigError } from '../util/errors.js';
 
 /**
@@ -55,9 +56,99 @@ export async function resolveProvider(globals: Record<string, unknown>): Promise
       return new AwsBedrockAgentCoreProvider(agentConfig);
     }
 
+    case 'azure-responses': {
+      const responsesConfig = config.providers.azureResponses;
+      if (!responsesConfig) {
+        throw new ConfigError(
+          'Azure Responses provider is not configured. Add providers.azureResponses to config.',
+        );
+      }
+      return new AzureResponsesProvider(responsesConfig);
+    }
+
     default:
       throw new ConfigError(
-        `Unknown provider "${providerName}". Available providers: azure-foundry, azure-agents, azure-anthropic, aws-bedrock-agent-core`,
+        `Unknown provider "${providerName}". Available providers: azure-foundry, azure-agents, azure-anthropic, aws-bedrock-agent-core, azure-responses`,
       );
   }
+}
+
+/** A provider instance paired with its models. */
+export interface ProviderEntry {
+  name: string;
+  provider: Provider;
+  models: ModelInfo[];
+}
+
+/**
+ * Instantiate every configured provider and collect their models.
+ * Providers that fail to initialise or list models are silently skipped.
+ */
+export async function resolveAllProviders(): Promise<ProviderEntry[]> {
+  const config = await loadConfig();
+  const entries: ProviderEntry[] = [];
+
+  // Map config keys → provider name + factory
+  const factories: Array<{
+    key: keyof typeof config.providers;
+    name: string;
+    create: () => Provider;
+  }> = [];
+
+  if (config.providers.azureAnthropic) {
+    const cfg = config.providers.azureAnthropic;
+    factories.push({
+      key: 'azureAnthropic',
+      name: 'azure-anthropic',
+      create: () => new AzureAnthropicProvider(cfg),
+    });
+  }
+
+  if (config.providers.azureFoundry) {
+    const cfg = config.providers.azureFoundry;
+    factories.push({
+      key: 'azureFoundry',
+      name: 'azure-foundry',
+      create: () => new AzureFoundryProvider(cfg),
+    });
+  }
+
+  if (config.providers.azureAgents) {
+    const cfg = config.providers.azureAgents;
+    factories.push({
+      key: 'azureAgents',
+      name: 'azure-agents',
+      create: () => new AzureAgentsProvider(cfg),
+    });
+  }
+
+  if (config.providers.azureResponses) {
+    const cfg = config.providers.azureResponses;
+    factories.push({
+      key: 'azureResponses',
+      name: 'azure-responses',
+      create: () => new AzureResponsesProvider(cfg),
+    });
+  }
+
+  if (config.providers.awsBedrockAgentCore) {
+    const cfg = config.providers.awsBedrockAgentCore;
+    factories.push({
+      key: 'awsBedrockAgentCore',
+      name: 'aws-bedrock-agent-core',
+      create: () => new AwsBedrockAgentCoreProvider(cfg),
+    });
+  }
+
+  for (const f of factories) {
+    try {
+      const provider = f.create();
+      const models = await provider.listModels();
+      entries.push({ name: f.name, provider, models });
+    } catch {
+      // Provider misconfigured or listModels failed — skip silently
+    }
+  }
+
+  return entries;
 }

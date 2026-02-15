@@ -69,6 +69,26 @@ CaretForge uses an interactive permission model inspired by [Claude Code](https:
 | `n`      | Deny — the model gets a "permission denied" message and adapts |
 | `a`      | Allow all future calls of this type for the session            |
 
+### Command Safety Analysis
+
+Before any shell command is executed (even with `--allow-shell`), CaretForge classifies it into a risk tier:
+
+| Risk Level      | Behavior                                                    | Examples                                        |
+| --------------- | ----------------------------------------------------------- | ----------------------------------------------- |
+| **Safe**        | Auto-approved with `--allow-shell`; normal prompt otherwise | `ls`, `cat`, `grep`, `git status`, `node -v`    |
+| **Mutating**    | Normal permission prompt                                    | `npm install`, `git commit`, `mkdir`            |
+| **Destructive** | Always prompts (even with `--allow-shell`), shown in red    | `rm`, `sudo`, `chmod -R`, `kill -9`, `shutdown` |
+| **Blocked**     | Denied outright — never executed                            | `rm -rf /`, fork bombs, `curl ... \| bash`      |
+
+Piped and chained commands (using `|`, `&&`, or `;`) are analyzed segment by segment. If any segment is destructive or blocked, the entire command inherits that classification.
+
+### Write Path Safety
+
+File write operations are also classified by path:
+
+- **Blocked paths** (always denied): `/etc/`, `/usr/`, `/bin/`, `/sbin/`, `/boot/`, `/dev/`, `/proc/`, `/sys/`, `~/.ssh/`, `~/.gnupg/`, `~/.aws/credentials`, `~/.azure/`, `~/.kube/config`, `.env`, `.env.local`
+- **Destructive paths** (always prompt): `~/.bashrc`, `~/.zshrc`, `~/.profile`, `~/.gitconfig`, `~/.npmrc`
+
 ### Auto-Approve Flags
 
 To skip prompts entirely:
@@ -78,6 +98,10 @@ caretforge --allow-write                # auto-approve all file writes
 caretforge --allow-shell                # auto-approve all shell commands
 caretforge --allow-write --allow-shell  # full autonomy
 ```
+
+::: warning
+Even with `--allow-shell`, destructive commands still prompt for approval. Blocked commands are always denied regardless of flags.
+:::
 
 ### Non-Interactive Mode
 
@@ -127,6 +151,7 @@ Tool calls are displayed inline during execution:
 ## Safety Design
 
 - **Permission prompts by default:** No destructive tool runs without your say-so
+- **Command safety analysis:** Every shell command and write path is classified by risk level before execution
 - **Session-scoped "always":** The `a` response only lasts for the current session
 - **No implicit escalation:** The model cannot bypass the permission system
 - **Iteration limit:** The agent loop stops after 20 iterations

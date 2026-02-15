@@ -55,6 +55,21 @@ Or with **Azure OpenAI**:
 }
 ```
 
+Or with **Azure OpenAI Responses API** (for Codex models):
+
+```json
+{
+  "defaultProvider": "azure-responses",
+  "providers": {
+    "azureResponses": {
+      "endpoint": "https://YOUR-RESOURCE.openai.azure.com",
+      "apiKey": "your-api-key-here",
+      "models": [{ "id": "gpt-5.2-codex" }]
+    }
+  }
+}
+```
+
 You can also use environment variables — see [Configuration](/getting-started/configuration) for details.
 
 ## 4. Check Your Setup

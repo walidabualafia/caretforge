@@ -90,6 +90,8 @@ Add it to the `providersSchema`:
 export const providersSchema = z.object({
   azureFoundry: azureFoundryConfigSchema.optional(),
   azureAgents: azureAgentsConfigSchema.optional(),
+  azureAnthropic: azureAnthropicConfigSchema.optional(),
+  azureResponses: azureResponsesConfigSchema.optional(),
   myProvider: myProviderConfigSchema.optional(), // Add this
 });
 ```
@@ -99,6 +101,7 @@ export const providersSchema = z.object({
 In `src/cli/shared.ts`, add a case to the `resolveProvider` switch:
 
 ```typescript
+// Existing cases: azure-foundry, azure-agents, azure-anthropic, azure-responses
 case 'my-provider': {
   const config = appConfig.providers.myProvider;
   if (!config) {
@@ -173,4 +176,5 @@ interface ChatCompletionResult {
 - If your provider doesn't support tool/function calling, set `supportsTools = false`
 - For streaming, parse SSE or chunked responses and `yield` a `StreamChunk` for each token
 - Use the `ProviderError` class from `src/util/errors.js` for consistent error handling
-- Look at `azureFoundry.ts` as a reference implementation
+- Look at `azureFoundry.ts` as a reference implementation for Chat Completions-style APIs
+- Look at `azureResponses.ts` for an example of a non-standard API (the Responses API uses a different request/response format and SSE event protocol)

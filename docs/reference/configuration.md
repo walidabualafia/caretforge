@@ -31,6 +31,11 @@ Complete reference for the `config.json` file.
       "region": "us-east-1",
       "agentRuntimeArn": "arn:aws:bedrock:us-east-1:123456789012:agent-alias/AGENT_ID/ALIAS_ID",
       "profile": "default"
+    },
+    "azureResponses": {
+      "endpoint": "https://RESOURCE.openai.azure.com",
+      "apiKey": "your-api-key",
+      "models": [{ "id": "gpt-5.2-codex", "description": "GPT-5.2 Codex" }]
     }
   },
   "telemetry": false
@@ -43,7 +48,7 @@ Complete reference for the `config.json` file.
 
 - **Type:** `string`
 - **Default:** `"azure-foundry"`
-- **Values:** `"azure-foundry"`, `"azure-agents"`, `"azure-anthropic"`, `"aws-bedrock-agent-core"`
+- **Values:** `"azure-foundry"`, `"azure-agents"`, `"azure-anthropic"`, `"aws-bedrock-agent-core"`, `"azure-responses"`
 
 The provider used when `--provider` is not specified on the command line.
 
@@ -102,36 +107,56 @@ For Anthropic models (Claude) deployed on Azure AI Foundry. Uses the Anthropic M
 | `models`     | `array`        | No       | `[]`           | Available models                              |
 
 ### URL Construction
+ 
+ ```
+ {endpoint}/v1/messages
+ ```
+ 
+ Uses the `x-api-key` header for authentication and `anthropic-version` header for API versioning.
+ 
+ ## AWS Bedrock Agent Core Provider
+ 
+ Path: `providers.awsBedrockAgentCore`
+ 
+ For Amazon Bedrock Agents (InvokeAgent API).
+ 
+ | Field             | Type     | Required | Default | Description                                   |
+ | ----------------- | -------- | -------- | ------- | --------------------------------------------- |
+ | `region`          | `string` | Yes      | —       | AWS region (e.g. `us-east-1`)                 |
+ | `agentRuntimeArn` | `string` | Yes      | —       | Full ARN of the Agent Alias                   |
+ | `accessKeyId`     | `string` | No       | —       | Static AWS Access Key                         |
+ | `secretAccessKey` | `string` | No       | —       | Static AWS Secret Key                         |
+ | `sessionToken`    | `string` | No       | —       | AWS Session Token                             |
+ | `profile`         | `string` | No       | —       | AWS profile name to use from credentials file |
+ 
+ ### Credentials Resolution
+ 
+ CaretForge follows the standard AWS credential provider chain order:
+ 
+ 1. Static credentials in `config.json`
+ 2. Environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`)
+ 3. AWS profile specified in `config.json`
+ 4. Default credential chain (shared config file, IAM roles, etc.)
 
-```
-{endpoint}/v1/messages
-```
+ ## Azure Responses Provider
 
-Uses the `x-api-key` header for authentication and `anthropic-version` header for API versioning.
+ Path: `providers.azureResponses`
 
-## AWS Bedrock Agent Core Provider
+ For models that use the OpenAI Responses API instead of Chat Completions (e.g. `gpt-5.2-codex`, `codex-mini`).
 
-Path: `providers.awsBedrockAgentCore`
+ | Field      | Type           | Required | Default | Description                         |
+ | ---------- | -------------- | -------- | ------- | ----------------------------------- |
+ | `endpoint` | `string (URL)` | Yes      | —       | `https://RESOURCE.openai.azure.com` |
+ | `apiKey`   | `string`       | Yes      | —       | Azure API key                       |
+ | `models`   | `array`        | No       | `[]`    | Available models                    |
 
-For Amazon Bedrock Agents (InvokeAgent API).
+ ### URL Construction
 
-| Field             | Type     | Required | Default | Description                                   |
-| ----------------- | -------- | -------- | ------- | --------------------------------------------- |
-| `region`          | `string` | Yes      | —       | AWS region (e.g. `us-east-1`)                 |
-| `agentRuntimeArn` | `string` | Yes      | —       | Full ARN of the Agent Alias                   |
-| `accessKeyId`     | `string` | No       | —       | Static AWS Access Key                         |
-| `secretAccessKey` | `string` | No       | —       | Static AWS Secret Key                         |
-| `sessionToken`    | `string` | No       | —       | AWS Session Token                             |
-| `profile`         | `string` | No       | —       | AWS profile name to use from credentials file |
+ ```
+ {endpoint}/openai/v1/responses
+ ```
 
-### Credentials Resolution
-
-CaretForge follows the standard AWS credential provider chain order:
-
-1. Static credentials in `config.json`
-2. Environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`)
-3. AWS profile specified in `config.json`
-4. Default credential chain (shared config file, IAM roles, etc.)
+ Uses the `api-key` header for authentication. No API version parameter is needed.
 
 ## Validation
 
