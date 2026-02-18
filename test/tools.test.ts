@@ -3,19 +3,23 @@ import { getAllTools } from '../src/tools/schema.js';
 import { executeReadFile } from '../src/tools/readFile.js';
 import { executeWriteFile } from '../src/tools/writeFile.js';
 import { executeEditFile } from '../src/tools/editFile.js';
+import { executeGrepSearch } from '../src/tools/grepSearch.js';
+import { executeGlobFind } from '../src/tools/globFind.js';
 import { executeShell } from '../src/tools/execShell.js';
 import { join } from 'node:path';
-import { mkdtemp, rm, readFile, writeFile } from 'node:fs/promises';
+import { mkdtemp, rm, readFile, writeFile, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 
 describe('getAllTools', () => {
-  it('returns all four tools', () => {
+  it('returns all six tools', () => {
     const tools = getAllTools();
-    expect(tools).toHaveLength(4);
+    expect(tools).toHaveLength(6);
     const names = tools.map((t) => t.function.name);
     expect(names).toContain('read_file');
     expect(names).toContain('write_file');
     expect(names).toContain('edit_file');
+    expect(names).toContain('grep_search');
+    expect(names).toContain('glob_find');
     expect(names).toContain('exec_shell');
   });
 });
@@ -165,6 +169,91 @@ describe('executeEditFile', () => {
       new_string: 'two-a\ntwo-b\ntwo-c',
     });
     expect(result).toContain('+2 lines');
+  });
+});
+
+describe('executeGrepSearch', () => {
+  let tmpDir: string;
+
+  beforeEach(async () => {
+    tmpDir = await mkdtemp(join(tmpdir(), 'caretforge-grep-test-'));
+    await writeFile(
+      join(tmpDir, 'hello.ts'),
+      'const greeting = "hello";\nconsole.log(greeting);\n',
+    );
+    await writeFile(join(tmpDir, 'world.ts'), 'export const world = 42;\n');
+    await writeFile(join(tmpDir, 'readme.md'), '# Title\nSome text\n');
+  });
+
+  afterEach(async () => {
+    await rm(tmpDir, { recursive: true, force: true });
+  });
+
+  it('finds matching lines', async () => {
+    const result = await executeGrepSearch({ pattern: 'greeting', path: tmpDir });
+    expect(result).toContain('greeting');
+    expect(result).toContain('hello.ts');
+  });
+
+  it('returns a no-match message when nothing matches', async () => {
+    const result = await executeGrepSearch({ pattern: 'zzz_nonexistent', path: tmpDir });
+    expect(result).toContain('No matches found');
+  });
+
+  it('filters files with include glob', async () => {
+    const result = await executeGrepSearch({ pattern: '.*', path: tmpDir, include: '*.md' });
+    expect(result).toContain('readme.md');
+    expect(result).not.toContain('hello.ts');
+  });
+
+  it('throws for empty pattern', async () => {
+    await expect(executeGrepSearch({ pattern: '' })).rejects.toThrow('non-empty');
+  });
+});
+
+describe('executeGlobFind', () => {
+  let tmpDir: string;
+
+  beforeEach(async () => {
+    tmpDir = await mkdtemp(join(tmpdir(), 'caretforge-glob-test-'));
+    await writeFile(join(tmpDir, 'app.ts'), 'export {};\n');
+    await writeFile(join(tmpDir, 'app.test.ts'), 'test("it works", () => {});\n');
+    await mkdir(join(tmpDir, 'sub'), { recursive: true });
+    await writeFile(join(tmpDir, 'sub', 'util.ts'), 'export {};\n');
+    await writeFile(join(tmpDir, 'notes.md'), '# Notes\n');
+  });
+
+  afterEach(async () => {
+    await rm(tmpDir, { recursive: true, force: true });
+  });
+
+  it('finds files matching a simple glob', async () => {
+    const result = await executeGlobFind({ pattern: '**/*.ts', path: tmpDir });
+    expect(result).toContain('app.ts');
+    expect(result).toContain('app.test.ts');
+    expect(result).toContain('sub/util.ts');
+    expect(result).not.toContain('notes.md');
+  });
+
+  it('finds files matching a specific name pattern', async () => {
+    const result = await executeGlobFind({ pattern: '**/*.test.ts', path: tmpDir });
+    expect(result).toContain('app.test.ts');
+    expect(result).not.toContain('app.ts');
+  });
+
+  it('returns a no-match message when nothing matches', async () => {
+    const result = await executeGlobFind({ pattern: '**/*.py', path: tmpDir });
+    expect(result).toContain('No files found');
+  });
+
+  it('throws for empty pattern', async () => {
+    await expect(executeGlobFind({ pattern: '' })).rejects.toThrow('non-empty');
+  });
+
+  it('throws for nonexistent directory', async () => {
+    await expect(
+      executeGlobFind({ pattern: '**/*.ts', path: '/nonexistent-dir-xyz' }),
+    ).rejects.toThrow('Failed to read directory');
   });
 });
 

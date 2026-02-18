@@ -82,6 +82,58 @@ export const EDIT_FILE_TOOL: ToolDefinition = {
   },
 };
 
+export const GREP_SEARCH_TOOL: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'grep_search',
+    description:
+      'Search file contents using regex. Uses ripgrep for speed. Returns matching lines with file paths and line numbers. Output is capped to prevent token explosion.',
+    parameters: {
+      type: 'object',
+      properties: {
+        pattern: {
+          type: 'string',
+          description: 'Regex pattern to search for.',
+        },
+        path: {
+          type: 'string',
+          description: 'Directory to search in. Defaults to the current working directory.',
+        },
+        include: {
+          type: 'string',
+          description: 'Glob pattern to filter files (e.g. "*.ts", "*.{js,jsx}").',
+        },
+      },
+      required: ['pattern'],
+      additionalProperties: false,
+    },
+  },
+};
+
+export const GLOB_FIND_TOOL: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'glob_find',
+    description:
+      'Find files matching a glob pattern. Returns matching file paths sorted by modification time (newest first). Results are capped to prevent token explosion.',
+    parameters: {
+      type: 'object',
+      properties: {
+        pattern: {
+          type: 'string',
+          description: 'Glob pattern to match files (e.g. "**/*.ts", "src/**/*.test.ts").',
+        },
+        path: {
+          type: 'string',
+          description: 'Root directory to search from. Defaults to the current working directory.',
+        },
+      },
+      required: ['pattern'],
+      additionalProperties: false,
+    },
+  },
+};
+
 export const EXEC_SHELL_TOOL: ToolDefinition = {
   type: 'function',
   function: {
@@ -115,7 +167,14 @@ export const EXEC_SHELL_TOOL: ToolDefinition = {
  * permission checking happens at execution time, not at selection time.
  */
 export function getAllTools(): ToolDefinition[] {
-  return [READ_FILE_TOOL, WRITE_FILE_TOOL, EDIT_FILE_TOOL, EXEC_SHELL_TOOL];
+  return [
+    READ_FILE_TOOL,
+    WRITE_FILE_TOOL,
+    EDIT_FILE_TOOL,
+    GREP_SEARCH_TOOL,
+    GLOB_FIND_TOOL,
+    EXEC_SHELL_TOOL,
+  ];
 }
 
 /**

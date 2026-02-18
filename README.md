@@ -28,6 +28,7 @@
 CaretForge is a BYOM (Bring Your Own Model) coding agent CLI — similar in spirit to [Claude Code](https://github.com/anthropics/claude-code), but open-source and provider-agnostic. You bring your own model credentials, and CaretForge gives you an agentic coding assistant in your terminal that can:
 
 - **Read files** in your codebase
+- **Search code** with regex (grep) and find files by pattern (glob) — no guessing paths
 - **Write and create files** (with permission)
 - **Execute shell commands** (with permission)
 - **Stream responses** in real-time
@@ -284,6 +285,9 @@ src/
 │   ├── schema.ts   # Tool JSON schemas for function calling
 │   ├── readFile.ts # File reading
 │   ├── writeFile.ts# File writing
+│   ├── editFile.ts # Surgical find-and-replace edits
+│   ├── grepSearch.ts # Regex code search (ripgrep)
+│   ├── globFind.ts # Glob-based file discovery
 │   ├── execShell.ts# Shell execution
 │   └── index.ts    # Tool dispatcher
 ├── safety/         # Command & path safety analysis

@@ -2,6 +2,8 @@ import type { ToolCall } from '../providers/provider.js';
 import { executeReadFile } from './readFile.js';
 import { executeWriteFile } from './writeFile.js';
 import { executeEditFile } from './editFile.js';
+import { executeGrepSearch } from './grepSearch.js';
+import { executeGlobFind } from './globFind.js';
 import { executeShell } from './execShell.js';
 import { ToolError } from '../util/errors.js';
 import { getLogger } from '../util/logger.js';
@@ -43,6 +45,19 @@ export async function executeTool(toolCall: ToolCall): Promise<string> {
         old_string: args['old_string'] as string,
         new_string: args['new_string'] as string,
         replace_all: args['replace_all'] as boolean | undefined,
+      });
+
+    case 'grep_search':
+      return executeGrepSearch({
+        pattern: args['pattern'] as string,
+        path: args['path'] as string | undefined,
+        include: args['include'] as string | undefined,
+      });
+
+    case 'glob_find':
+      return executeGlobFind({
+        pattern: args['pattern'] as string,
+        path: args['path'] as string | undefined,
       });
 
     case 'exec_shell':

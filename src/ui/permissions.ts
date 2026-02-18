@@ -58,8 +58,9 @@ export class PermissionManager {
    * the safety analysis layer before prompting.
    */
   async check(toolName: string, args: Record<string, unknown>): Promise<boolean> {
-    // read_file is always safe
-    if (toolName === 'read_file') return true;
+    // Read-only tools are always safe
+    if (toolName === 'read_file' || toolName === 'grep_search' || toolName === 'glob_find')
+      return true;
 
     // ── exec_shell safety analysis ────────────────────────
     if (toolName === 'exec_shell') {
