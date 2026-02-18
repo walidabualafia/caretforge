@@ -51,6 +51,35 @@ Parameters:
 
 The tool fails with a clear error if `old_string` is not found or matches multiple locations (unless `replace_all` is set). This prevents accidental edits.
 
+### `grep_search` — Always Allowed
+
+Searches file contents using regex, powered by [ripgrep](https://github.com/BurntSushi/ripgrep) for speed. Returns matching lines with file paths and line numbers. Output is capped to prevent token explosion.
+
+```bash
+caretforge "Find all TODO comments in the codebase"
+```
+
+Parameters:
+
+- **`pattern`** — Regex pattern to search for (required)
+- **`path`** _(optional)_ — Directory to search in (defaults to cwd)
+- **`include`** _(optional)_ — Glob to filter files (e.g. `"*.ts"`, `"*.{js,jsx}"`)
+
+Falls back to `grep -rn` if ripgrep is not installed.
+
+### `glob_find` — Always Allowed
+
+Finds files matching a glob pattern, sorted by modification time (newest first). Results are capped to prevent token explosion.
+
+```bash
+caretforge "What test files exist in this project?"
+```
+
+Parameters:
+
+- **`pattern`** — Glob pattern (e.g. `"**/*.ts"`, `"src/**/*.test.ts"`) (required)
+- **`path`** _(optional)_ — Root directory to search from (defaults to cwd)
+
 ### `exec_shell` — Requires Permission
 
 Executes a shell command and returns stdout, stderr, and exit code.
@@ -80,9 +109,9 @@ Shell execution lets the agent run arbitrary commands on your machine. Review ea
 
 CaretForge uses an interactive permission model inspired by [Claude Code](https://github.com/anthropics/claude-code):
 
-1. The model **always knows about all tools** (read, write, shell)
-2. Safe tools (`read_file`) execute automatically
-3. Dangerous tools (`write_file`, `exec_shell`) prompt you first
+1. The model **always knows about all tools** (read, write, search, shell)
+2. Safe tools (`read_file`, `grep_search`, `glob_find`) execute automatically
+3. Dangerous tools (`write_file`, `edit_file`, `exec_shell`) prompt you first
 4. You choose: **allow once**, **deny**, or **always allow** for the session
 
 ### Permission Responses
