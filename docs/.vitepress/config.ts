@@ -28,6 +28,7 @@ export default defineConfig({
         text: 'Guide',
         items: [
           { text: 'Azure AI Foundry Setup', link: '/guide/azure-setup' },
+          { text: 'AWS Bedrock Agent Setup', link: '/guide/aws-setup' },
           { text: 'Tools & Permissions', link: '/guide/tools' },
           { text: 'Adding a Provider', link: '/guide/adding-providers' },
           { text: 'Architecture', link: '/guide/architecture' },

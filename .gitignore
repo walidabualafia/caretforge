@@ -4,6 +4,7 @@ coverage/
 *.tsbuildinfo
 docs/.vitepress/dist/
 docs/.vitepress/cache/
+pnpm-workspace.yaml
 
 # IDE
 .vscode/

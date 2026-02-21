@@ -42,6 +42,11 @@ caretforge config init --with-secrets
       "models": [{ "id": "gpt-4o", "description": "GPT-4o" }],
       "chatCompletionPath": "/chat/completions",
       "apiVersion": "2024-10-21"
+    },
+    "awsBedrockAgentCore": {
+      "region": "us-east-1",
+      "agentRuntimeArn": "arn:aws:bedrock:us-east-1:123456789012:agent-alias/AGENT_ID/ALIAS_ID",
+      "profile": "default"
     }
   },
   "telemetry": false
@@ -77,6 +82,33 @@ For Anthropic models (Claude) deployed on Azure AI Foundry.
 | `apiKey`     | `string` | —              | **Required.** Azure API key                                 |
 | `apiVersion` | `string` | `"2023-06-01"` | Anthropic API version header                                |
 | `models`     | `array`  | `[]`           | List of `{ id, description? }` objects                      |
+
+### AWS Bedrock Agent Core Provider Fields
+
+For Amazon Bedrock Agents.
+
+| Field             | Type     | Default | Description                                             |
+| ----------------- | -------- | ------- | ------------------------------------------------------- |
+| `region`          | `string` | —       | **Required.** AWS region (e.g. `us-east-1`)             |
+| `agentRuntimeArn` | `string` | —       | **Required.** Full ARN of the Agent Alias               |
+| `accessKeyId`     | `string` | —       | Optional. Static AWS Access Key                         |
+| `secretAccessKey` | `string` | —       | Optional. Static AWS Secret Key                         |
+| `sessionToken`    | `string` | —       | Optional. AWS Session Token                             |
+| `profile`         | `string` | —       | Optional. AWS profile name to use from credentials file |
+
+Example:
+
+```json
+{
+  "defaultProvider": "aws-bedrock-agent-core",
+  "providers": {
+    "awsBedrockAgentCore": {
+      "region": "us-east-1",
+      "agentRuntimeArn": "arn:aws:bedrock:us-east-1:123456789012:agent-alias/AGENT_ID/ALIAS_ID"
+    }
+  }
+}
+```
 
 Example:
 
@@ -126,15 +158,16 @@ The same Azure API key works across Chat Completions, Anthropic, and Responses A
 
 Environment variables override config file values:
 
-| Variable                      | Maps to                           |
-| ----------------------------- | --------------------------------- |
-| `CARETFORGE_DEFAULT_PROVIDER` | `defaultProvider`                 |
-| `CARETFORGE_AZURE_ENDPOINT`   | `providers.azureFoundry.endpoint` |
-| `CARETFORGE_AZURE_API_KEY`    | `providers.azureFoundry.apiKey`   |
-| `CARETFORGE_AZURE_AUTH_MODE`  | `providers.azureFoundry.authMode` |
-| `CARETFORGE_AGENT_ENDPOINT`   | `providers.azureAgents.endpoint`  |
-| `CARETFORGE_AGENT_ID`         | `providers.azureAgents.agentId`   |
-| `CARETFORGE_AGENT_API_KEY`    | `providers.azureAgents.apiKey`    |
+| Variable                      | Maps to                                           |
+| ----------------------------- | ------------------------------------------------- |
+| `CARETFORGE_DEFAULT_PROVIDER` | `defaultProvider`                                 |
+| `CARETFORGE_AZURE_ENDPOINT`   | `providers.azureFoundry.endpoint`                 |
+| `CARETFORGE_AZURE_API_KEY`    | `providers.azureFoundry.apiKey`                   |
+| `CARETFORGE_AZURE_AUTH_MODE`  | `providers.azureFoundry.authMode`                 |
+| `CARETFORGE_AGENT_API_KEY`    | `providers.azureAgents.apiKey`                    |
+| `CARETFORGE_AWS_REGION`       | `providers.awsBedrockAgentCore.region`            |
+| `CARETFORGE_AWS_AGENT_ARN`    | `providers.awsBedrockAgentCore.agentRuntimeArn`   |
+| `AWS_REGION`                  | `providers.awsBedrockAgentCore.region` (Fallback) |
 
 ## Viewing Your Config
 

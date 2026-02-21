@@ -1,5 +1,6 @@
 import { loadConfig } from '../config/index.js';
 import { AzureFoundryProvider } from '../providers/azureFoundry.js';
+import { AwsBedrockAgentCoreProvider } from '../providers/awsBedrockAgentCore.js';
 import { AzureAgentsProvider } from '../providers/azureAgents.js';
 import { AzureAnthropicProvider } from '../providers/azureAnthropic.js';
 import { AzureResponsesProvider } from '../providers/azureResponses.js';
@@ -45,6 +46,16 @@ export async function resolveProvider(globals: Record<string, unknown>): Promise
       return new AzureAnthropicProvider(anthropicConfig);
     }
 
+    case 'aws-bedrock-agent-core': {
+      const agentConfig = config.providers.awsBedrockAgentCore;
+      if (!agentConfig) {
+        throw new ConfigError(
+          'AWS Bedrock Agent Core provider is not configured. Add providers.awsBedrockAgentCore to config.',
+        );
+      }
+      return new AwsBedrockAgentCoreProvider(agentConfig);
+    }
+
     case 'azure-responses': {
       const responsesConfig = config.providers.azureResponses;
       if (!responsesConfig) {
@@ -57,7 +68,7 @@ export async function resolveProvider(globals: Record<string, unknown>): Promise
 
     default:
       throw new ConfigError(
-        `Unknown provider "${providerName}". Available providers: azure-foundry, azure-agents, azure-anthropic, azure-responses`,
+        `Unknown provider "${providerName}". Available providers: azure-foundry, azure-agents, azure-anthropic, aws-bedrock-agent-core, azure-responses`,
       );
   }
 }
@@ -117,6 +128,15 @@ export async function resolveAllProviders(): Promise<ProviderEntry[]> {
       key: 'azureResponses',
       name: 'azure-responses',
       create: () => new AzureResponsesProvider(cfg),
+    });
+  }
+
+  if (config.providers.awsBedrockAgentCore) {
+    const cfg = config.providers.awsBedrockAgentCore;
+    factories.push({
+      key: 'awsBedrockAgentCore',
+      name: 'aws-bedrock-agent-core',
+      create: () => new AwsBedrockAgentCoreProvider(cfg),
     });
   }
 

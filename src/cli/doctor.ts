@@ -82,6 +82,48 @@ export const doctorCommand = new Command('doctor')
             message: 'Not configured. Add providers.azureFoundry to config.',
           });
         }
+
+        // ── AWS Bedrock Agent Core checks ──────────────────
+        const aws = config.providers.awsBedrockAgentCore;
+        if (aws) {
+          checks.push({
+            name: 'AWS region',
+            status: aws.region ? 'ok' : 'fail',
+            message: aws.region || 'Region is missing.',
+          });
+
+          const hasArn = !!aws.agentRuntimeArn || !!process.env['CARETFORGE_AWS_AGENT_ARN'];
+          checks.push({
+            name: 'AWS Agent ARN',
+            status: hasArn ? (aws.agentRuntimeArn?.includes('AGENT_ID') ? 'warn' : 'ok') : 'fail',
+            message: !hasArn
+              ? 'Agent Runtime ARN is missing.'
+              : aws.agentRuntimeArn?.includes('AGENT_ID')
+                ? 'Still using placeholder ARN. Update your config.'
+                : aws.agentRuntimeArn,
+          });
+
+          const hasCreds =
+            (!!aws.accessKeyId && !!aws.secretAccessKey) ||
+            (!!process.env['AWS_ACCESS_KEY_ID'] && !!process.env['AWS_SECRET_ACCESS_KEY']) ||
+            !!aws.profile;
+
+          checks.push({
+            name: 'AWS Credentials',
+            status: hasCreds ? 'ok' : 'warn',
+            message: hasCreds
+              ? aws.profile
+                ? `Using profile: ${aws.profile}`
+                : 'Credentials found in config/env.'
+              : 'No explicit credentials found. Will use default SDK chain.',
+          });
+        } else {
+          checks.push({
+            name: 'AWS Bedrock Agent',
+            status: 'warn',
+            message: 'Not configured. Add providers.awsBedrockAgentCore to config.',
+          });
+        }
       } catch (err) {
         checks.push({
           name: 'Config valid',
